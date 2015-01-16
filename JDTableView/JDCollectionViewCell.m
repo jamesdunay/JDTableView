@@ -65,5 +65,14 @@
     _accessoryView.hidden = !_item.isSelected;
 }
 
+/*
+-(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
+    if(self.onTouch){
+        self.onTouch(self.indexPath);
+    }
+}
+
+ */
+
 
 @end

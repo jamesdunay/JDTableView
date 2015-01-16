@@ -100,8 +100,9 @@
     [[_animator itemsInRect:rect] enumerateObjectsUsingBlock:^(UICollectionViewLayoutAttributes* item, NSUInteger idx, BOOL *stop) {
         if ([item.indexPath isEqual:_activeIndex]){
 //            item.transform = CGAffineTransformTranslate(item.transform, 100, 0);
-            item.frame = CGRectMake(item.frame.origin.x, item.frame.origin.y, 320, 20);
-            item.bounds = CGRectMake(item.bounds.origin.x, item.bounds.origin.y, 320, 20);
+//            item.transform = CGAffineTransformScale(item.transform, .5, .5);
+            //item.frame = CGRectMake(item.frame.origin.x, item.frame.origin.y, 320, 20);
+            //item.bounds = CGRectMake(item.bounds.origin.x, item.bounds.origin.y, 320, 20);
         }
     }];
     

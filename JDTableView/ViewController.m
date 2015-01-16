@@ -34,6 +34,8 @@ static CGFloat const cellHeight = 50.f;
 @property (nonatomic) BOOL isScrollingFast;
 @property (nonatomic) CGFloat speedThreshold;
 
+@property (nonatomic) CGFloat selectedCellHeight;
+
 @property (nonatomic, strong) NSIndexPath* activeIndex;
 
 @end
@@ -61,9 +63,12 @@ static CGFloat const cellHeight = 50.f;
     
     _speedThreshold = baseThreshold;
     
+    _selectedCellHeight = 50.f;
+    
      _springyFlowLayout = [[THSpringyFlowLayout alloc] init];
     _collectionView = [[JDCollectionView alloc] initWithFrame:self.view.frame collectionViewLayout:_springyFlowLayout];
     [_collectionView registerClass:[JDCollectionViewCell class] forCellWithReuseIdentifier:@"cell"];
+    _collectionView.delaysContentTouches = NO;
     _collectionView.dataSource = self;
     _collectionView.delegate = self;
     _collectionView.tag = 1;
@@ -118,27 +123,44 @@ static CGFloat const cellHeight = 50.f;
     cell.backgroundColor = backgroundColor;
     cell.kJDCellDelegate = self;
     cell.titleLabel.text = title;
+    cell.indexPath = indexPath;
     cell.item = item;
+//    cell.onTouch = ^(NSIndexPath *indexPath){
+//        ((THSpringyFlowLayout *)collectionView.collectionViewLayout).activeIndex = indexPath;
+//    };
+    
 
     return cell;
 }
 
+- (UIEdgeInsets)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout insetForSectionAtIndex:(NSInteger)section{
+    if (collectionView.tag == 1) {
+        return [self getNewCollectionViewInset];
+    }
+    return UIEdgeInsetsMake(0, 0, 0, 0);
+}
+
 -(CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath{
 
-//    if ([indexPath isEqual:_activeIndex]) {
-//        return CGSizeMake(self.view.frame.size.width, 20);
-//    }else{
+    
+    if (collectionView.tag == 1) {
         return CGSizeMake(self.view.frame.size.width, cellHeight);
-//    }
+    }else {
+        return CGSizeMake(self.view.frame.size.width, _selectedCellHeight);
+    }
+
 }
 
 -(void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath{
+    
+    _selectedCellHeight = 50.f;
     
     if (collectionView.tag ==1 ) {
         JDCollectionViewCell* cell = (JDCollectionViewCell*)[_collectionView cellForItemAtIndexPath:indexPath];
         CollectionViewItem* item = (CollectionViewItem*)_items[indexPath.row];
         
         if (!item.isSelected) {
+            [cell toggleSelected];
             [_selections addObject:(CollectionViewItem*)_items[indexPath.row]];
     //        [_items removeObjectAtIndex:indexPath.row];
             [self animateCollectionsForNewSelectionOnComplete:^{
@@ -147,6 +169,7 @@ static CGFloat const cellHeight = 50.f;
     //            [_collectionView deleteItemsAtIndexPaths:@[indexPath]];
             }];
         }else{
+            [cell toggleSelected];
             __block NSIndexPath *indexPathToRemove;
             [_selections enumerateObjectsUsingBlock:^(CollectionViewItem* tempItem, NSUInteger idx, BOOL *stop) {
                 if ([tempItem isEqual:item]) {
@@ -160,8 +183,7 @@ static CGFloat const cellHeight = 50.f;
                 [_selectionView deleteItemsAtIndexPaths:@[indexPathToRemove]];
             }];
         }
-        
-        [cell toggleSelected];
+    
         
     } else if (collectionView.tag == 2){
 
@@ -175,11 +197,13 @@ static CGFloat const cellHeight = 50.f;
             [_selectionView deleteItemsAtIndexPaths:@[indexPath]];
         }];
     
-        
+        [(CollectionViewItem*)_items[indexInCollectionView.row] setIsSelected:NO];
         [collectionViewCell toggleSelected];
     }
 
+//COLLECTIONVIEW INSET 
 
+    
 //    _springyFlowLayout.activeIndex = indexPath;
 //    _activeIndex = indexPath;
 //    [_collectionView reloadItemsAtIndexPaths:@[indexPath]];
@@ -211,9 +235,21 @@ static CGFloat const cellHeight = 50.f;
         [self setIsScrollingFast:NO];
     }
     
+    if (_selections.count) {
+        [self adjustSelectedCellHeightWithOffset:distance];
+        [self newCollectionViewFrames];
+    }
+    
     _lastOffset = currentOffset;
 }
 
+-(void)adjustSelectedCellHeightWithOffset:(CGFloat)offset{
+    if (_selectedCellHeight >= 10) {
+        CGFloat offsetDivision = offset/_selections.count;
+        _selectedCellHeight -= offsetDivision;
+        [_selectionView reloadData];
+    }
+}
 
 -(void)setIsScrollingFast:(BOOL)isScrollingFast{
     _isScrollingFast = isScrollingFast;
@@ -269,33 +305,37 @@ static CGFloat const cellHeight = 50.f;
 
 #pragma Mark View Adjustments
 
+-(void)newCollectionViewFrames{
+//    _collectionView.frame = [self getNewCollectionViewFrame];
+//    _collectionView.collectionViewLayout.se = [self getNewCollectionViewInset];
+    _selectionView.frame = [self getNewSelectionViewFrame];
+}
+
 // Not really 'OnComplete'
 -(void)animateCollectionsForNewSelectionOnComplete:(void(^)())complete{
     
-    void (^animation)(void) = ^{
-        _collectionView.frame = [self getNewCollectionViewFrame];
-        _selectionView.frame = [self getNewSelectionViewFrame];
-    };
     
     complete();
     
     [UIView animateWithDuration:.3
                           delay:0
                         options:UIViewAnimationOptionCurveEaseOut
-                     animations:animation
+                     animations:^{
+                         [self newCollectionViewFrames];
+                     }
                      completion:^(BOOL finished) {
 
                      }];
 }
 
 
--(CGRect)getNewCollectionViewFrame{
-    CGFloat yPos = _selections.count * (cellHeight + 10);
-    return CGRectMake(0, yPos, 320, self.view.frame.size.height - yPos);
+-(UIEdgeInsets)getNewCollectionViewInset{
+    CGFloat yPos = _selections.count * (_selectedCellHeight + 10);
+    return UIEdgeInsetsMake(yPos, 0, 0, 0);
 }
 
 -(CGRect)getNewSelectionViewFrame{
-    CGFloat height = _selections.count * (cellHeight + 10);
+    CGFloat height = _selections.count * (_selectedCellHeight + 10);
     return CGRectMake(0, 0, 320, height);
 }
 
