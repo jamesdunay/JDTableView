@@ -11,7 +11,12 @@
 @interface CollectionViewItem : NSObject
 
 @property (nonatomic) NSInteger index;
-@property (nonatomic, strong) NSObject *name;
+
+@property (nonatomic, strong) NSString *title;
+@property (nonatomic, strong) NSString *date;
+@property (nonatomic) NSNumber* numberOfPhotos;
+@property (nonatomic, strong)NSArray* photos;
+
 @property (nonatomic) BOOL isSelected;
 
 @end
