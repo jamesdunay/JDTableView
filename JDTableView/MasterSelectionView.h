@@ -13,13 +13,13 @@
 
 @protocol SelectionViewDelegate <NSObject>
 -(void)selectionsSwipedClosed;
+-(void)selectionsSwipedOpen:(CGFloat)maximumSelectionViewHeight;
 @end
 
 @interface MasterSelectionView : UIView <UICollectionViewDataSource, UICollectionViewDelegate>
 
 @property (nonatomic) CGFloat selectedCellHeight;
 @property (nonatomic) CGRect fullFrame;
-
 @property (nonatomic, strong) id <SelectionViewDelegate> selectionViewDelegate;
 
 -(void)adjustSelectedCellHeightWithOffset:(CGFloat)offsetChange andScrollView:(UIScrollView*)scrollView;

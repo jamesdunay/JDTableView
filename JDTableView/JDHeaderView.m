@@ -38,7 +38,7 @@
         self.dateLabel.translatesAutoresizingMaskIntoConstraints = NO;
         self.dateLabel.font = [UIFont fontWithName:@"AvenirNext-Regular" size:8.f];
         self.dateLabel.textAlignment = NSTextAlignmentRight;
-        self.dateLabel.alpha = .25f;
+        self.dateLabel.alpha = .4f;
         self.dateLabel.textColor = [UIColor whiteColor];
         [self.metrics addSubview:self.dateLabel];
         
@@ -58,7 +58,7 @@
         self.line = [[UIView alloc] init];
         self.line.translatesAutoresizingMaskIntoConstraints = NO;
         self.line.backgroundColor = [UIColor whiteColor];
-        self.line.alpha = .1f;
+        self.line.alpha = .25f;
         [self addSubview:self.line];
         
     }

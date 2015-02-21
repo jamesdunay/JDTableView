@@ -19,7 +19,8 @@
 static CGFloat const baseThreshold = 55.f;
 static CGFloat const activeThreshold = 6.f;
 static CGFloat const titleThreshold = 50.f;
-static CGFloat const maximumCellHeight = 120.f;
+static CGFloat const maximumCellHeight = 170.f;
+static CGFloat const baseTopInset = 64.f;
 
 
 //static CGFloat const minimumCellHeight = 0.f;
@@ -36,8 +37,9 @@ static CGFloat const maximumCellHeight = 120.f;
 @property (nonatomic, strong) JDFastDisplayView* fastDisplayView;
 @property (nonatomic, strong) THSpringyFlowLayout* springyFlowLayout;
 
-
 @property(nonatomic, strong) MasterSelectionView *masterSelectionView;
+
+@property (nonatomic, strong) UIImageView* backgroundView;
 
 @property (nonatomic, strong) NSMutableArray* items;
 @property (nonatomic, strong) NSMutableArray* selections;
@@ -62,8 +64,6 @@ static CGFloat const maximumCellHeight = 120.f;
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    NSArray* tempNames = @[@"James", @"Donna", @"Loran", @"Mike", @"Ernesto", @"Lydia", @"Jordan", @"Thomas", @"Matthew", @"Kenan", @"Johnny", @"Robert", @"Katianne", @"Donna", @"Whitney", @"Michelle", @"Carson", @"Christina", @"Kristy", @"Bert", @"Adam", @"Ashley", @"Riley", @"Alice", @"Sue"];
-
     UIImage* laThirdPhoto = [UIImage imageNamed:@"LA_1.png"];
     UIImage* laSecondPhoto = [UIImage imageNamed:@"LA_2.png"];
     UIImage* laMainPhoto = [UIImage imageNamed:@"LA_3.png"];
@@ -110,14 +110,6 @@ static CGFloat const maximumCellHeight = 120.f;
         }
     }
     
-    
-    UIImageView* background = [[UIImageView alloc] initWithFrame:self.view.frame];
-    background.image = [UIImage imageNamed:@"background.png"];
-    background.alpha = .65f;
-    [self.view addSubview:background];
-    
-    
-    
     _speedThreshold = baseThreshold;
     _selectedCellHeight = 50.f;
 
@@ -125,27 +117,33 @@ static CGFloat const maximumCellHeight = 120.f;
     flow.minimumInteritemSpacing = 0;
     flow.minimumLineSpacing = 2;
     
-     _springyFlowLayout = [[THSpringyFlowLayout alloc] init];
-    _collectionView = [[JDCollectionView alloc] initWithFrame:self.view.frame collectionViewLayout:flow];
-    [_collectionView registerClass:[JDCollectionViewCell class] forCellWithReuseIdentifier:@"cell"];
-    _collectionView.dataSource = self;
-    _collectionView.delegate = self;
-    _collectionView.tag = 1;
+    self.collectionView = [[JDCollectionView alloc] initWithFrame:self.view.frame collectionViewLayout:flow];
+    [self.collectionView registerClass:[JDCollectionViewCell class] forCellWithReuseIdentifier:@"cell"];
+    self.collectionView.dataSource = self;
+    self.collectionView.delegate = self;
+    self.collectionView.tag = 1;
     self.collectionView.backgroundColor = [UIColor clearColor];
-
-
+    [self.view addSubview:self.collectionView];
     
-    self.imageCollectionView = [[JDCollectionView alloc] initWithFrame:self.view.frame collectionViewLayout:self.springyFlowLayout];
+    UICollectionViewFlowLayout *flowTwo = [[UICollectionViewFlowLayout alloc] init];
+    flowTwo.minimumInteritemSpacing = 0;
+    flowTwo.minimumLineSpacing = 2;
+    
+    self.springyFlowLayout = [[THSpringyFlowLayout alloc] init];
+    self.springyFlowLayout.minimumInteritemSpacing = 0;
+    self.springyFlowLayout.minimumLineSpacing = 2;
+    
+    self.imageCollectionView = [[JDCollectionView alloc] initWithFrame:self.view.frame collectionViewLayout:flowTwo];
     [self.imageCollectionView registerClass:[JDCollectionViewCell class] forCellWithReuseIdentifier:@"cell"];
     self.imageCollectionView.dataSource = self;
     self.imageCollectionView.delegate = self;
     self.imageCollectionView.tag = 3;
     self.self.imageCollectionView.backgroundColor = [UIColor clearColor];
     [self.view addSubview:self.imageCollectionView];
-    [self.view addSubview:_collectionView];
+
     
     self.masterSelectionView = [[MasterSelectionView alloc] init];
-    self.masterSelectionView.fullFrame = self.view.frame;
+    self.masterSelectionView.fullFrame = CGRectMake(0, 64, self.view.frame.size.width, self.view.frame.size.height - 64);
     self.masterSelectionView.selectionViewDelegate = self;
     [self.view addSubview:self.masterSelectionView];
     
@@ -154,17 +152,31 @@ static CGFloat const maximumCellHeight = 120.f;
     _fastDisplayView.userInteractionEnabled = NO;
     _fastDisplayView.backgroundColor = [UIColor colorWithWhite:0.f alpha:.8f];
 //    [self.view addSubview:_fastDisplayView];
+    
+    UIImage* backgroundImage = [UIImage imageNamed:@"largebackground.png"];
+    
+    self.backgroundView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, backgroundImage.size.height)];
+    self.backgroundView.image = backgroundImage;
+//    background.alpha = .65f;
+    [self.view addSubview:self.backgroundView];
+    [self.view sendSubviewToBack:self.backgroundView];
+    
 }
 
 
 -(void)selectionsSwipedClosed{
-    CGPoint newContentOffset = CGPointMake(0, self.collectionView.contentOffset.y + (self.masterSelectionView.frame.size.height - 51.f));
-    [self.collectionView setContentOffset:newContentOffset animated:YES];
+    CGPoint newContentOffset = CGPointMake(0, self.collectionView.contentOffset.y + (self.masterSelectionView.frame.size.height - 38.f));
+//    ^^ using -38 here to make sure that the offset will close the view just past its MINIMUM threshold. This ensures that the 'selected' view will display.
+    [self.imageCollectionView setContentOffset:newContentOffset animated:YES];
+}
+
+-(void)selectionsSwipedOpen:(CGFloat)maximumSelectionViewHeight{
+    CGPoint newContentOffset = CGPointMake(0, self.collectionView.contentOffset.y - maximumSelectionViewHeight + 40.f);
+    [self.imageCollectionView setContentOffset:newContentOffset animated:YES];
 }
 
 -(NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section{
-    if (collectionView.tag == 1 || collectionView.tag == 3)     return [_items count];
-    else return [_selections count];
+    return [_items count];
 }
 
 -(NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView{
@@ -177,34 +189,22 @@ static CGFloat const maximumCellHeight = 120.f;
 
     JDCollectionViewCell* cell = (JDCollectionViewCell*)[collectionView dequeueReusableCellWithReuseIdentifier:reuseID forIndexPath:indexPath];
     cell.backgroundColor = [UIColor clearColor];;
-    cell.kJDCellDelegate = self;
     cell.indexPath = indexPath;
-    cell.item = self.items[indexPath.row];
-    
     [cell shouldShowImages:collectionView.tag == 3];
+    [cell setInfoWithItem:self.items[indexPath.row]];
     
     return cell;
 }
 
 - (UIEdgeInsets)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout insetForSectionAtIndex:(NSInteger)section{
-    if (collectionView.tag == 1) {
-        collectionView.scrollIndicatorInsets = [self getNewCollectionViewInset];
-        return [self getNewCollectionViewInset];
-    }
-    return UIEdgeInsetsMake(0, 0, 0, 0);
+    return [self getNewCollectionViewInset];
 }
 
 -(CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath{
-    if (collectionView.tag == 1 || collectionView.tag == 3) {
-        return CGSizeMake(self.view.frame.size.width, maximumCellHeight);
-    }else {
-        return CGSizeMake(self.view.frame.size.width, _selectedCellHeight);
-    }
+    return CGSizeMake(self.view.frame.size.width, maximumCellHeight);
 }
 
 -(void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath{
-    
-    _selectedCellHeight = 50.f;
     
     JDCollectionViewCell* cell = (JDCollectionViewCell*)[_collectionView cellForItemAtIndexPath:indexPath];
     CollectionViewItem* item = (CollectionViewItem*)_items[indexPath.row];
@@ -220,6 +220,11 @@ static CGFloat const maximumCellHeight = 120.f;
     
     [self.collectionView performBatchUpdates:^{
         [self.collectionView reloadData];
+    } completion:^(BOOL finished) {}];
+
+    
+    [self.imageCollectionView performBatchUpdates:^{
+        [self.imageCollectionView reloadData];
     } completion:^(BOOL finished) {}];
 }
 
@@ -237,7 +242,15 @@ static CGFloat const maximumCellHeight = 120.f;
 }
 
 -(void)scrollViewDidScroll:(UIScrollView *)scrollView{
-    self.imageCollectionView.contentOffset = scrollView.contentOffset;//CGPointMake(0, .y/2);
+    self.collectionView.contentOffset = scrollView.contentOffset;
+    
+    CGFloat newYPos = scrollView.contentOffset.y/scrollView.contentSize.height * (self.backgroundView.frame.size.height - self.view.frame.size.height);
+    self.backgroundView.frame = CGRectMake(0, -newYPos , self.backgroundView.frame.size.width, self.backgroundView.frame.size.height);
+    
+    
+//   self.backgroundView.frame = CGRectMake(scrollView.contentOffset.y, 0, self.backgroundView.frame.size.width, self.backgroundView.frame.size.height);
+//    ^^ THIS IS REAL COOL, could be some sort of section switching, like maybe backgrounds for something like seasons? Notice the Y offset in the X
+    
     
     if (scrollView.tag == 1) {
         CGPoint currentOffset = scrollView.contentOffset;
@@ -311,24 +324,8 @@ static CGFloat const maximumCellHeight = 120.f;
 #pragma Mark View Adjustments
 
 
-
-
-
 -(UIEdgeInsets)getNewCollectionViewInset{
-    return UIEdgeInsetsMake(self.masterSelectionView.frame.size.height, 0, 0, 0);
-}
-
--(CGRect)getNewSelectionViewFrame{
-    return CGRectMake(0, 0, self.view.frame.size.width, [self getHeightOfSelectionView]);
-}
-
--(CGFloat)getHeightOfSelectionView{
-    CGFloat height = _selections.count * self.selectedCellHeight;
-    
-    if (height > self.view.frame.size.height/2) height = self.view.frame.size.height/2;
-    if (height < titleThreshold) height = titleThreshold;
-    
-    return height;
+    return UIEdgeInsetsMake(self.masterSelectionView.frame.size.height + baseTopInset, 0, 0, 0);
 }
 
 -(CGFloat)getCurrentSelectionViewMaxHeight{
@@ -339,20 +336,6 @@ static CGFloat const maximumCellHeight = 120.f;
 
 
 #pragma Mark Custom Delegate Methods
-
--(void)touchingCell:(id)cell{
-        
-//    [_collectionView performBatchUpdates:^{
-//        
-//    } completion:^(BOOL finished) {
-//        
-//    }];
-    
-//    JDCollectionViewCell* targetedCell = (JDCollectionViewCell*)cell;
-//    targetedCell.isActive = YES;
-    
-//    targetedCell.titleLabel.alpha = .1;
-}
 
 
 #pragma Mark Helper Methodss
