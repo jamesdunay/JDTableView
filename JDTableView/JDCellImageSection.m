@@ -62,14 +62,14 @@
     [self.secondaryView layoutSubviews];
     [super layoutSubviews];
     
-//    [self setupShadowsForView:self.mainImageContainer];
-//    [self setupShadowsForView:self.secondaryTopContainer];
-//    if (self.hasTwoSecondaryImages) {
-//        self.secondaryBottomContainer.hidden = NO;
-//        [self setupShadowsForView:self.secondaryBottomContainer];
-//    }else{
-//        self.secondaryBottomContainer.hidden = YES;
-//    }
+    [self setupShadowsForView:self.mainImageContainer];
+    [self setupShadowsForView:self.secondaryTopContainer];
+    if (self.hasTwoSecondaryImages) {
+        self.secondaryBottomContainer.hidden = NO;
+        [self setupShadowsForView:self.secondaryBottomContainer];
+    }else{
+        self.secondaryBottomContainer.hidden = YES;
+    }
 }
 
 

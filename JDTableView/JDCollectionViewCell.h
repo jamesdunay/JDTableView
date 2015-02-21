@@ -20,13 +20,13 @@
 //@property (nonatomic) CATransform3D magnifiedTransform;
 @property (nonatomic) id <JDCollectionViewCellDelegate> kJDCellDelegate;
 //@property (nonatomic, copy) void (^onTouch)(NSIndexPath *);
-@property (nonatomic, strong) CollectionViewItem* item;
+//@property (nonatomic, strong) CollectionViewItem* item;
 @property (nonatomic, strong) NSIndexPath *indexPath;
 
 @property (nonatomic) BOOL isActive;
 //@property (nonatomic) BOOL isSelected;
 
-
+-(void)setInfoWithItem:(CollectionViewItem *)item;
 -(void)shouldShowImages:(BOOL)showImages;
 -(void)toggleSelected;
 

@@ -11,7 +11,7 @@
 #import "JDSelectionView.h"
 #import "SelectionViewFlowLayout.h"
 
-static CGFloat const titleDisplayThreshold = 50.f;
+static CGFloat const titleDisplayThreshold = 41.f;
 
 @interface JDSelectionView()
 @property(nonatomic, strong)UILabel* titleLabel;
@@ -21,20 +21,14 @@ static CGFloat const titleDisplayThreshold = 50.f;
 
 -(id)initWithFrame:(CGRect)frame collectionViewLayout:(UICollectionViewLayout *)layout{
     self = [super initWithFrame:frame collectionViewLayout:layout];
-    if (self) {
-        self.titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, titleDisplayThreshold)];
-        self.titleLabel.text = @"SELECTED";
-        self.titleLabel.alpha = 0.f;
-        
-        [self addSubview:self.titleLabel];
-    }
+    if (self) {}
     return self;
 }
 
 
 -(void)setFrame:(CGRect)frame{
     CGRect newFrame = frame;
-    if (frame.size.height < 50.f) newFrame = CGRectMake(0, 0, frame.size.width, 50.f);
+    if (frame.size.height < titleDisplayThreshold) newFrame = CGRectMake(0, 0, frame.size.width, titleDisplayThreshold);
     else if (frame.size.height > self.maxHeight) newFrame = CGRectMake(0, 0, frame.size.width, self.maxHeight );
     
     [super setFrame:newFrame];

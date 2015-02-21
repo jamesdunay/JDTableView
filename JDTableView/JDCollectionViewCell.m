@@ -20,6 +20,7 @@
 @property (nonatomic, strong) JDCellImageSection* imageSectionView;
 
 @property (nonatomic)BOOL initialConstraintsSet;
+@property (nonatomic)BOOL shouldShowImages;
 
 @end
 
@@ -48,17 +49,16 @@
     return self;
 }
 
--(void)setItem:(CollectionViewItem *)item{
-    _item = item;
-    
-    
+-(void)setInfoWithItem:(CollectionViewItem *)item{
+//    _item = item;
     NSAttributedString *attributedString = [[NSAttributedString alloc] initWithString:item.title attributes:@{NSKernAttributeName : @(1.f)}];
     
     self.headerView.titleLabel.attributedText = attributedString;
     self.headerView.numberOfPhotosLabel.text = [item.numberOfPhotos stringValue];
     self.headerView.dateLabel.text = item.date;
-    [self.imageSectionView setImages:item.photos];
-    
+    if (self.shouldShowImages) {
+        [self.imageSectionView setImages:item.photos];
+    }
 //    _accessoryView.hidden = !_item.isSelected;
 }
 
@@ -70,6 +70,8 @@
         self.imageSectionView.hidden = YES;
         self.headerView.hidden = NO;
     }
+    
+    self.shouldShowImages = showImages;
 }
 
 -(void)tapped:(id)sender{
@@ -114,8 +116,8 @@
 }
 
 -(void)toggleSelected{
-    _item.isSelected = _item.isSelected ? NO : YES;
-    _accessoryView.hidden = !_item.isSelected;
+//    _item.isSelected = _item.isSelected ? NO : YES;
+//    _accessoryView.hidden = !_item.isSelected;
 }
 
 @end

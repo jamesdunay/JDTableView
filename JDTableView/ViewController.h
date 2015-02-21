@@ -10,5 +10,5 @@
 #import "JDCollectionViewCell.h"
 #import "MasterSelectionView.h"
 
-@interface ViewController : UIViewController <UICollectionViewDataSource, UICollectionViewDelegate, JDCollectionViewCellDelegate, SelectionViewDelegate>
+@interface ViewController : UIViewController <UICollectionViewDataSource, UICollectionViewDelegate, SelectionViewDelegate>
 @end

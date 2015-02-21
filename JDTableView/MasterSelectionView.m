@@ -28,13 +28,16 @@
 @property(nonatomic) NSInteger maxItemsCanBeDisplayed;
 @property(nonatomic) CGPoint savedScrollViewPoint;
 
+@property(nonatomic)BOOL viewIsLockedUp;
+@property(nonatomic)BOOL viewHasBeenSwipedOpen;
+
 @end
 
 static CGFloat const selectedViewDelayExpandingTheshold = 200.f;
 //  ^^  Used to delay pull down on selection view
 
-static CGFloat const titleDisplayThreshold = 50.f;
-static CGFloat const maximumCellHeight = 50.f;
+static CGFloat const titleDisplayThreshold = 41.f;
+static CGFloat const maximumCellHeight = 41.f;
 
 @implementation MasterSelectionView
 
@@ -42,9 +45,9 @@ static CGFloat const maximumCellHeight = 50.f;
     self = [super init];
     if (self) {
         
-        self.frame = CGRectMake(0, 0, 320, 0);
+        self.frame = CGRectMake(0, 64, 320, 10);
         
-        _selections = [[NSMutableArray alloc] init];
+        self.selections = [[NSMutableArray alloc] init];
         
         SelectionViewFlowLayout* selectionFlow = [[SelectionViewFlowLayout alloc] init];
         selectionFlow.minimumInteritemSpacing = 0;
@@ -59,6 +62,7 @@ static CGFloat const maximumCellHeight = 50.f;
         
         self.titleLabel = [[UILabel alloc] init];
         self.titleLabel.text = @"SELECTED";
+        self.titleLabel.textColor = [UIColor whiteColor];
         self.titleLabel.alpha = 0.f;
         self.titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
         [self addSubview:self.titleLabel];
@@ -68,8 +72,14 @@ static CGFloat const maximumCellHeight = 50.f;
         self.swipeDismissView.backgroundColor = [UIColor redColor];
         [self addSubview:self.swipeDismissView];
         
-        UISwipeGestureRecognizer* swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipedToDismiss)];
-        [self.swipeDismissView addGestureRecognizer:swipe];
+        UISwipeGestureRecognizer* swipeUp = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipedToClose)];
+        swipeUp.direction = UISwipeGestureRecognizerDirectionUp;
+        
+        UISwipeGestureRecognizer* swipeDown = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipedToOpen)];
+        swipeDown.direction = UISwipeGestureRecognizerDirectionDown;
+        
+        [self.swipeDismissView addGestureRecognizer:swipeUp];
+        [self.swipeDismissView addGestureRecognizer:swipeDown];
     }
     return self;
 }
@@ -79,16 +89,15 @@ static CGFloat const maximumCellHeight = 50.f;
     self.maxItemsCanBeDisplayed = (fullFrame.size.height/2)/maximumCellHeight;
 }
 
--(void)swipedToDismiss{
-
+-(void)swipedToClose{
     [self.selectionViewDelegate selectionsSwipedClosed];
-    
-//    [UIView animateWithDuration:.3
-//                          delay:0
-//                        options:UIViewAnimationOptionCurveEaseOut
-//                     animations:^{
-//                         self.frame = CGRectMake(0, 0, self.frame.size.width, 50);
-//                     }completion:nil];
+    self.viewIsLockedUp = YES;
+}
+
+-(void)swipedToOpen{
+    [self.selectionViewDelegate selectionsSwipedOpen:self.getMaxHeighForSelectionView];
+    self.viewIsLockedUp = NO;
+    self.viewHasBeenSwipedOpen = YES;
 }
 
 -(void)layoutSubviews{
@@ -128,7 +137,7 @@ static CGFloat const maximumCellHeight = 50.f;
                                                                                views:NSDictionaryOfVariableBindings(_titleLabel)
                                       ]];
     
-    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(>=0)-[_swipeDismissView(==10)]|"
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(>=0)-[_swipeDismissView(==25)]|"
                                                                              options:0
                                                                              metrics:nil
                                                                                views:NSDictionaryOfVariableBindings(_swipeDismissView)
@@ -169,8 +178,9 @@ static CGFloat const maximumCellHeight = 50.f;
 //    cell.kJDCellDelegate = self;
 //    ^^ unselect cell
     
+    [cell shouldShowImages:NO];
     cell.indexPath = indexPath;
-    cell.item = item;
+    [cell setInfoWithItem:item];
 
     return cell;
 }
@@ -180,7 +190,7 @@ static CGFloat const maximumCellHeight = 50.f;
 }
 
 -(CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath{
-    return CGSizeMake(self.frame.size.width, _selectedCellHeight);
+    return CGSizeMake(self.frame.size.width, self.selectedCellHeight);
 }
 
 -(void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath{
@@ -219,35 +229,39 @@ static CGFloat const maximumCellHeight = 50.f;
             self.yOffsetStartingPoint = scrollView.contentOffset.y;
 //            ^^ Mark Offset threshold
         }
-        
+                
         //  ^^ Offset > 0 == Shrinking
         if (([self canShrinkSelectionViewWithCurrentOffset:scrollView.contentOffset] && offsetChange > 0.f) || ([self canExpandSelectionViewWithCurrentOffset:scrollView.contentOffset] && offsetChange < 0.f)) {
             CGFloat offsetDivision = offsetChange/self.numberOfVisibleCells;
             self.selectedCellHeight -= offsetDivision;
             
-            self.frame = CGRectMake(0, 0, self.frame.size.width, self.frame.size.height - offsetChange);
+            self.frame = CGRectMake(0, self.frame.origin.y, self.frame.size.width, self.frame.size.height - offsetChange);
             
             if (self.selectedCellHeight > maximumCellHeight && scrollView.contentOffset.y > 0.f){
                 self.selectedCellHeight = maximumCellHeight;
                 self.frame = [self getMaxSizeFrame];
+                self.viewHasBeenSwipedOpen = NO;
             }
 
             if (self.frame.size.height < titleDisplayThreshold) {
                 self.selectedCellHeight = titleDisplayThreshold/self.numberOfVisibleCells;
                 self.frame = [self getMinSizeFrame];
-                self.titleLabel.alpha = 1.f;
             }
             
             [self.selectionView reloadData];
             scrollView.scrollIndicatorInsets = [self getInsetForSelectionFrame];
         }
-        
-        self.titleLabel.alpha = self.selectionView.frame.size.height <= titleDisplayThreshold;
+        [self adjustAlphas];
     }
 }
 
+-(void)adjustAlphas{
+    self.titleLabel.alpha = self.selectionView.frame.size.height <= titleDisplayThreshold;
+    self.selectionView.alpha = !self.titleLabel.alpha;
+}
+
 -(BOOL)canShrinkSelectionViewWithCurrentOffset:(CGPoint)collectionOffset{
-    BOOL hasReachedMinimiumSize = self.frame.size.height <= 50.f;
+    BOOL hasReachedMinimiumSize = self.frame.size.height <= maximumCellHeight;
     return !hasReachedMinimiumSize && collectionOffset.y >= 0.f;
 }
 
@@ -255,9 +269,18 @@ static CGFloat const maximumCellHeight = 50.f;
     //    ^^  Used to direct the control states for expanding the selection view
     
     BOOL hasHitThreshold = self.yOffsetStartingPoint - collectionOffset.y > selectedViewDelayExpandingTheshold;
-    BOOL thresholdShouldBeApplied = self.selectionView.frame.size.height <= 50.f;
-    BOOL thresholdShouldBeCanceled = collectionOffset.y <= (self.fullFrame.size.height/2 - titleDisplayThreshold);
+    BOOL thresholdShouldBeApplied = self.selectionView.frame.size.height <= maximumCellHeight;
+    BOOL thresholdShouldBeCanceled = (collectionOffset.y <= (self.fullFrame.size.height/2 - titleDisplayThreshold)) || self.viewHasBeenSwipedOpen;
     BOOL isSmallerThanMaxHeight = self.frame.size.height <= self.getMaxHeighForSelectionView;
+    
+    
+//    NEED to cancel threshold for self.viewIsLockedUp
+    
+    
+    
+    
+    
+    
     
 //    Maybe the bounce can only be allowed if the scrollview is not at max height
 //    BOOL collectionViewIsPastTopOfContent = collectionOffset.y <= 0;
@@ -268,6 +291,7 @@ static CGFloat const maximumCellHeight = 50.f;
 
     return (self.selectedCellHeight < maximumCellHeight &&
             collectionOffset.y >= 0.0f &&
+            !self.viewIsLockedUp &&
             isSmallerThanMaxHeight &&
             ((hasHitThreshold || !thresholdShouldBeApplied) || thresholdShouldBeCanceled));
 }
@@ -278,12 +302,12 @@ static CGFloat const maximumCellHeight = 50.f;
 
 -(void)addItem:(CollectionViewItem *)item{
     
-    _selectedCellHeight = 50.f;
+    _selectedCellHeight = maximumCellHeight;
     [self.selections addObject:item];
     NSIndexPath* newSelectionIndex = [NSIndexPath indexPathForItem:(_selections.count - 1) inSection:0];
     [_selectionView insertItemsAtIndexPaths:@[newSelectionIndex]];
     
-    [self animateCollectionsForNewSelection];
+    [self animateCollectionToMaxSize];
 }
 
 -(void)removeItem:(CollectionViewItem *)item{
@@ -297,10 +321,10 @@ static CGFloat const maximumCellHeight = 50.f;
     [_selections removeObjectAtIndex:indexPathToRemove.row];
     [_selectionView deleteItemsAtIndexPaths:@[indexPathToRemove]];
     
-    [self animateCollectionsForNewSelection];
+    [self animateCollectionToMaxSize];
 }
 
--(void)animateCollectionsForNewSelection{
+-(void)animateCollectionToMaxSize{
     [UIView animateWithDuration:.3
                           delay:0
                         options:UIViewAnimationOptionCurveEaseOut
@@ -308,15 +332,16 @@ static CGFloat const maximumCellHeight = 50.f;
                          self.frame = [self getMaxSizeFrame];
                          [self layoutIfNeeded];
                      }completion:nil];
+    [self adjustAlphas];
 }
 
 
 -(CGRect)getMinSizeFrame{
-    return CGRectMake(0, 0, self.fullFrame.size.width, titleDisplayThreshold);
+    return CGRectMake(0, self.frame.origin.y, self.fullFrame.size.width, titleDisplayThreshold);
 }
 
 -(CGRect)getMaxSizeFrame{
-    return CGRectMake(0, 0, self.fullFrame.size.width, self.getMaxHeighForSelectionView);
+    return CGRectMake(0, self.frame.origin.y, self.fullFrame.size.width, self.getMaxHeighForSelectionView);
 }
 
 -(CGFloat)getMaxHeighForSelectionView{

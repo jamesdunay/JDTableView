@@ -29,6 +29,7 @@
 		729A8F261A858F0C005A785F /* JDCellImageSection.m in Sources */ = {isa = PBXBuildFile; fileRef = 729A8F251A858F0C005A785F /* JDCellImageSection.m */; };
 		72CB50201A853DC900116F2D /* JDHeaderView.m in Sources */ = {isa = PBXBuildFile; fileRef = 72CB501F1A853DC900116F2D /* JDHeaderView.m */; };
 		72E2821B1A89C08F00E34F92 /* background@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 72E2821A1A89C08F00E34F92 /* background@2x.png */; };
+		72E2821D1A89CD5300E34F92 /* largebackground@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 72E2821C1A89CD5300E34F92 /* largebackground@2x.png */; };
 		72ED81911A8743CD00F14D06 /* LA_1@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 72ED818E1A8743CD00F14D06 /* LA_1@2x.png */; };
 		72ED81921A8743CD00F14D06 /* LA_2@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 72ED818F1A8743CD00F14D06 /* LA_2@2x.png */; };
 		72ED81931A8743CD00F14D06 /* LA_3@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 72ED81901A8743CD00F14D06 /* LA_3@2x.png */; };
@@ -84,6 +85,7 @@
 		72CB501E1A853DC900116F2D /* JDHeaderView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JDHeaderView.h; sourceTree = "<group>"; };
 		72CB501F1A853DC900116F2D /* JDHeaderView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JDHeaderView.m; sourceTree = "<group>"; };
 		72E2821A1A89C08F00E34F92 /* background@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "background@2x.png"; sourceTree = "<group>"; };
+		72E2821C1A89CD5300E34F92 /* largebackground@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "largebackground@2x.png"; sourceTree = "<group>"; };
 		72ED818E1A8743CD00F14D06 /* LA_1@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "LA_1@2x.png"; sourceTree = "<group>"; };
 		72ED818F1A8743CD00F14D06 /* LA_2@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "LA_2@2x.png"; sourceTree = "<group>"; };
 		72ED81901A8743CD00F14D06 /* LA_3@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "LA_3@2x.png"; sourceTree = "<group>"; };
@@ -227,6 +229,7 @@
 		72ED818D1A8743B800F14D06 /* Images */ = {
 			isa = PBXGroup;
 			children = (
+				72E2821C1A89CD5300E34F92 /* largebackground@2x.png */,
 				72E2821A1A89C08F00E34F92 /* background@2x.png */,
 				72219B831A8943BF00E12290 /* Costa_1@2x.png */,
 				72219B841A8943BF00E12290 /* Costa_2@2x.png */,
@@ -332,6 +335,7 @@
 				72ED81951A87447000F14D06 /* camera@2x.png in Resources */,
 				29F6A2641A49EAB300034087 /* Images.xcassets in Resources */,
 				72E2821B1A89C08F00E34F92 /* background@2x.png in Resources */,
+				72E2821D1A89CD5300E34F92 /* largebackground@2x.png in Resources */,
 				72ED81931A8743CD00F14D06 /* LA_3@2x.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
