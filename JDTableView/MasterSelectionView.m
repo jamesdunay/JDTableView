@@ -51,6 +51,7 @@ static CGFloat const maximumCellHeight = 41.f;
         self.frame = CGRectMake(0, 64, 320, 10);
         
         self.selections = [[NSMutableArray alloc] init];
+        self.clipsToBounds = YES;
 
         self.backgroundImageView = [[UIImageView alloc] init];
         self.backgroundImageView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -66,6 +67,7 @@ static CGFloat const maximumCellHeight = 41.f;
         self.selectionView.dataSource = self;
         self.selectionView.delegate = self;
         self.selectionView.tag = 2;
+        self.selectionView.clipsToBounds = NO;
         self.selectionView.translatesAutoresizingMaskIntoConstraints = NO;
         self.selectionView.backgroundColor = [UIColor clearColor];
         [self addSubview:self.selectionView];
@@ -117,13 +119,32 @@ static CGFloat const maximumCellHeight = 41.f;
 //}
 
 -(void)swipedToClose{
-    [self.selectionViewDelegate selectionsSwipedClosed];
+//    [self.selectionViewDelegate selectionsSwipedClosed];
+
+    
+    [self.selectionView performBatchUpdates:^{
+        [self.selectionView reloadData];
+        [UIView animateWithDuration:1.f animations:^{
+            self.frame = [self getMinSizeFrame];
+            [self layoutSubviews];
+        }];
+    } completion:^(BOOL finished) {}];
+    
     self.viewIsLockedUp = YES;
 }
 
 -(void)swipedToOpen{
     self.viewHasBeenSwipedOpen = YES;
-    [self.selectionViewDelegate selectionsSwipedOpen:self.getMaxHeighForSelectionView];
+
+    
+    [self.selectionView performBatchUpdates:^{
+        [self.selectionView reloadData];
+        [UIView animateWithDuration:1.f animations:^{
+            self.frame = [self getMaxSizeFrame];
+            [self layoutSubviews];
+        }];
+    } completion:^(BOOL finished) {}];
+//    [self.selectionViewDelegate selectionsSwipedOpen:self.getMaxHeighForSelectionView];
     self.viewIsLockedUp = NO;
 }
 
