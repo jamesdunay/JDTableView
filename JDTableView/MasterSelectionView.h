@@ -14,13 +14,19 @@
 @protocol SelectionViewDelegate <NSObject>
 -(void)selectionsSwipedClosed;
 -(void)selectionsSwipedOpen:(CGFloat)maximumSelectionViewHeight;
+-(void)adjustScrollViewOffsetTo:(CGFloat)offset;
+-(void)getNewContentInsetsAndAdjustOffset;
 @end
 
 @interface MasterSelectionView : UIView <UICollectionViewDataSource, UICollectionViewDelegate>
 
 @property (nonatomic) CGFloat selectedCellHeight;
 @property (nonatomic) CGRect fullFrame;
+@property (nonatomic, strong) UIImageView* backgroundImageView;
+@property (nonatomic, strong) NSLayoutConstraint* backgroundTopConstraint;
 @property (nonatomic, strong) id <SelectionViewDelegate> selectionViewDelegate;
+
+@property (nonatomic) BOOL viewIsLockedUp;
 
 -(void)adjustSelectedCellHeightWithOffset:(CGFloat)offsetChange andScrollView:(UIScrollView*)scrollView;
 -(void)addItem:(CollectionViewItem*)item;

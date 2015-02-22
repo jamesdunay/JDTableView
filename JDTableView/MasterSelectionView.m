@@ -10,13 +10,14 @@
 #import "JDSelectionView.h"
 #import "SelectionViewFlowLayout.h"
 #import "JDCollectionViewCell.h"
+#import "JDSelectionViewFooter.h"
 
 
 @interface MasterSelectionView()
 
 @property(nonatomic, strong)UILabel* titleLabel;
 @property(nonatomic, strong)JDSelectionView* selectionView;
-@property(nonatomic, strong)UIView* swipeDismissView;
+@property(nonatomic, strong)JDSelectionViewFooter* swipeDismissView;
 
 
 @property(nonatomic, strong)NSMutableArray* selections;
@@ -25,10 +26,11 @@
 @property(nonatomic) BOOL canSaveCurrentOffsetPoint;
 
 @property (nonatomic) CGFloat yOffsetStartingPoint;
-@property(nonatomic) NSInteger maxItemsCanBeDisplayed;
 @property(nonatomic) CGPoint savedScrollViewPoint;
+@property(nonatomic) NSInteger maxItemsCanBeDisplayed;
 
-@property(nonatomic)BOOL viewIsLockedUp;
+@property(nonatomic) CGFloat lastPanOffset;
+
 @property(nonatomic)BOOL viewHasBeenSwipedOpen;
 
 @end
@@ -48,6 +50,12 @@ static CGFloat const maximumCellHeight = 41.f;
         self.frame = CGRectMake(0, 64, 320, 10);
         
         self.selections = [[NSMutableArray alloc] init];
+
+        self.backgroundImageView = [[UIImageView alloc] init];
+        self.backgroundImageView.translatesAutoresizingMaskIntoConstraints = NO;
+        self.backgroundImageView.contentMode = UIViewContentModeTop;
+        self.backgroundImageView.clipsToBounds = YES;
+        [self addSubview:self.backgroundImageView];
         
         SelectionViewFlowLayout* selectionFlow = [[SelectionViewFlowLayout alloc] init];
         selectionFlow.minimumInteritemSpacing = 0;
@@ -58,6 +66,7 @@ static CGFloat const maximumCellHeight = 41.f;
         self.selectionView.delegate = self;
         self.selectionView.tag = 2;
         self.selectionView.translatesAutoresizingMaskIntoConstraints = NO;
+        self.selectionView.backgroundColor = [UIColor clearColor];
         [self addSubview:self.selectionView];
         
         self.titleLabel = [[UILabel alloc] init];
@@ -67,13 +76,16 @@ static CGFloat const maximumCellHeight = 41.f;
         self.titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
         [self addSubview:self.titleLabel];
         
-        self.swipeDismissView = [[UIView alloc] init];
+        self.swipeDismissView = [[JDSelectionViewFooter alloc] init];
         self.swipeDismissView.translatesAutoresizingMaskIntoConstraints = NO;
-        self.swipeDismissView.backgroundColor = [UIColor redColor];
         [self addSubview:self.swipeDismissView];
+        
         
         UISwipeGestureRecognizer* swipeUp = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipedToClose)];
         swipeUp.direction = UISwipeGestureRecognizerDirectionUp;
+//
+//        UIPanGestureRecognizer* pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(dragFrame:)];
+//        [self.swipeDismissView addGestureRecognizer:pan];
         
         UISwipeGestureRecognizer* swipeDown = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipedToOpen)];
         swipeDown.direction = UISwipeGestureRecognizerDirectionDown;
@@ -89,29 +101,64 @@ static CGFloat const maximumCellHeight = 41.f;
     self.maxItemsCanBeDisplayed = (fullFrame.size.height/2)/maximumCellHeight;
 }
 
+-(void)dragFrame:(UIPanGestureRecognizer*)pan{
+    CGPoint translate = [pan translationInView:self];
+    CGFloat newOffset = translate.y - self.lastPanOffset;
+    
+//    self.frame = UIEdgeInsetsInsetRect(self.frame, UIEdgeInsetsMake(0, 0, -newOffset, 0));
+    [self.selectionViewDelegate adjustScrollViewOffsetTo:-newOffset];
+    
+    self.lastPanOffset = translate.y;
+    
+    if(pan.state == UIGestureRecognizerStateEnded){
+        self.lastPanOffset = 0.f;
+    }
+}
+
 -(void)swipedToClose{
     [self.selectionViewDelegate selectionsSwipedClosed];
     self.viewIsLockedUp = YES;
 }
 
 -(void)swipedToOpen{
+    self.viewHasBeenSwipedOpen = YES;
     [self.selectionViewDelegate selectionsSwipedOpen:self.getMaxHeighForSelectionView];
     self.viewIsLockedUp = NO;
-    self.viewHasBeenSwipedOpen = YES;
 }
 
 -(void)layoutSubviews{
     
     if (!self.defaultConstraintsSet) {
-        [self addConstraints:[self defaultConstratins]];
+        [self addConstraints:[self defaultConstraints]];
         self.defaultConstraintsSet = YES;
     }
-    
     [super layoutSubviews];
 }
 
--(NSArray*)defaultConstratins{
+-(NSArray*)defaultConstraints{
     NSMutableArray* constraints =[NSMutableArray new];
+
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(>=0)-[_backgroundImageView]|"
+                                                                             options:0
+                                                                             metrics:nil
+                                                                               views:NSDictionaryOfVariableBindings(_backgroundImageView)
+                                      ]];
+    
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[_backgroundImageView]|"
+                                                                             options:0
+                                                                             metrics:nil
+                                                                               views:NSDictionaryOfVariableBindings(_backgroundImageView)
+                                      ]];
+    
+    self.backgroundTopConstraint = [NSLayoutConstraint constraintWithItem:self.backgroundImageView
+                                                                attribute:NSLayoutAttributeTop
+                                                                relatedBy:NSLayoutRelationEqual
+                                                                   toItem:self
+                                                                attribute:NSLayoutAttributeTop
+                                                               multiplier:1.f
+                                                                 constant:-64.f
+                                    ];
+    [constraints addObject:self.backgroundTopConstraint];
     
     [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[_selectionView]|"
                                                                              options:0
@@ -149,8 +196,6 @@ static CGFloat const maximumCellHeight = 41.f;
                                                                                views:NSDictionaryOfVariableBindings(_swipeDismissView)
                                       ]];
     
-    
-
     return [constraints copy];
 }
 
@@ -275,11 +320,6 @@ static CGFloat const maximumCellHeight = 41.f;
     
     
 //    NEED to cancel threshold for self.viewIsLockedUp
-    
-    
-    
-    
-    
     
     
 //    Maybe the bounce can only be allowed if the scrollview is not at max height

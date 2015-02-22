@@ -55,7 +55,12 @@ static CGFloat const baseTopInset = 64.f;
 
 @property (nonatomic) BOOL selectedViewCanContract;
 @property (nonatomic) BOOL selectedViewCanExpand;
+
+@property (nonatomic) BOOL collectionsNeedReload;
+@property (nonatomic) BOOL lockSelectionViewPosition;
+
 @property (nonatomic) CGFloat yOffsetStartingPoint;
+@property (nonatomic) CGFloat startingTopInset;
 
 @end
 
@@ -145,6 +150,7 @@ static CGFloat const baseTopInset = 64.f;
     self.masterSelectionView = [[MasterSelectionView alloc] init];
     self.masterSelectionView.fullFrame = CGRectMake(0, 64, self.view.frame.size.width, self.view.frame.size.height - 64);
     self.masterSelectionView.selectionViewDelegate = self;
+    self.masterSelectionView.backgroundImageView.image = [UIImage imageNamed:@"background.png"];
     [self.view addSubview:self.masterSelectionView];
     
     _fastDisplayView = [[JDFastDisplayView alloc] initWithFrame:self.view.frame];
@@ -153,26 +159,53 @@ static CGFloat const baseTopInset = 64.f;
     _fastDisplayView.backgroundColor = [UIColor colorWithWhite:0.f alpha:.8f];
 //    [self.view addSubview:_fastDisplayView];
     
-    UIImage* backgroundImage = [UIImage imageNamed:@"largebackground.png"];
+    UIImage* backgroundImage = [UIImage imageNamed:@"background.png"];
     
     self.backgroundView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, backgroundImage.size.height)];
     self.backgroundView.image = backgroundImage;
-//    background.alpha = .65f;
     [self.view addSubview:self.backgroundView];
     [self.view sendSubviewToBack:self.backgroundView];
     
 }
 
 
+#pragma Mark SelectionView Delegates
+
+-(void)adjustScrollViewOffsetTo:(CGFloat)offset{
+    CGPoint currentOffset = self.imageCollectionView.contentOffset;
+    [self.imageCollectionView setContentOffset:CGPointMake(0, currentOffset.y + offset)];
+}
+
 -(void)selectionsSwipedClosed{
+    self.collectionsNeedReload = YES;
+    self.startingTopInset = self.getNewCollectionViewInset.top;
     CGPoint newContentOffset = CGPointMake(0, self.collectionView.contentOffset.y + (self.masterSelectionView.frame.size.height - 38.f));
 //    ^^ using -38 here to make sure that the offset will close the view just past its MINIMUM threshold. This ensures that the 'selected' view will display.
     [self.imageCollectionView setContentOffset:newContentOffset animated:YES];
 }
 
 -(void)selectionsSwipedOpen:(CGFloat)maximumSelectionViewHeight{
+    if (self.masterSelectionView.viewIsLockedUp) {
+        self.collectionsNeedReload = YES;
+    }
+
+    self.startingTopInset = self.getNewCollectionViewInset.top;
     CGPoint newContentOffset = CGPointMake(0, self.collectionView.contentOffset.y - maximumSelectionViewHeight + 40.f);
     [self.imageCollectionView setContentOffset:newContentOffset animated:YES];
+}
+
+-(void)getNewContentInsetsAndAdjustOffset{
+    
+    [self.collectionView reloadData];
+    [self.imageCollectionView reloadData];
+    CGFloat newTopInset = self.getNewCollectionViewInset.top;
+    CGFloat offsetAdjustment = (self.startingTopInset - newTopInset);
+    CGFloat newOffset = self.collectionView.contentOffset.y - offsetAdjustment;
+
+    self.lockSelectionViewPosition = YES;
+    [self.collectionView setContentOffset:CGPointMake(0, newOffset) animated:NO];
+    [self.imageCollectionView setContentOffset:CGPointMake(0, newOffset) animated:NO];
+    self.lockSelectionViewPosition = NO;
 }
 
 -(NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section{
@@ -197,6 +230,7 @@ static CGFloat const baseTopInset = 64.f;
 }
 
 - (UIEdgeInsets)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout insetForSectionAtIndex:(NSInteger)section{
+    collectionView.scrollIndicatorInsets = [self getNewCollectionViewInset];
     return [self getNewCollectionViewInset];
 }
 
@@ -217,12 +251,10 @@ static CGFloat const baseTopInset = 64.f;
         [self.masterSelectionView removeItem:item];
     }
 
-    
     [self.collectionView performBatchUpdates:^{
         [self.collectionView reloadData];
     } completion:^(BOOL finished) {}];
 
-    
     [self.imageCollectionView performBatchUpdates:^{
         [self.imageCollectionView reloadData];
     } completion:^(BOOL finished) {}];
@@ -237,20 +269,31 @@ static CGFloat const baseTopInset = 64.f;
     }
 }
 
+-(void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView{
+
+    if (self.collectionsNeedReload){
+        self.collectionsNeedReload = NO;
+        [self getNewContentInsetsAndAdjustOffset];
+    }
+}
+
 -(void)scrollViewWillBeginDragging:(UIScrollView *)scrollView{
     [self setIsScrollingFast:NO];
 }
 
 -(void)scrollViewDidScroll:(UIScrollView *)scrollView{
+    
     self.collectionView.contentOffset = scrollView.contentOffset;
+    self.collectionView.scrollIndicatorInsets = [self getNewCollectionViewInset];
+    scrollView.scrollIndicatorInsets = [self getNewCollectionViewInset];
     
     CGFloat newYPos = scrollView.contentOffset.y/scrollView.contentSize.height * (self.backgroundView.frame.size.height - self.view.frame.size.height);
     self.backgroundView.frame = CGRectMake(0, -newYPos , self.backgroundView.frame.size.width, self.backgroundView.frame.size.height);
+    self.masterSelectionView.backgroundTopConstraint.constant = -newYPos - 64;
     
     
 //   self.backgroundView.frame = CGRectMake(scrollView.contentOffset.y, 0, self.backgroundView.frame.size.width, self.backgroundView.frame.size.height);
 //    ^^ THIS IS REAL COOL, could be some sort of section switching, like maybe backgrounds for something like seasons? Notice the Y offset in the X
-    
     
     if (scrollView.tag == 1) {
         CGPoint currentOffset = scrollView.contentOffset;
@@ -262,12 +305,11 @@ static CGFloat const baseTopInset = 64.f;
             [self setIsScrollingFast:NO];
         }
         
-        [self.masterSelectionView adjustSelectedCellHeightWithOffset:distance andScrollView:scrollView];
-        
+        if(!self.lockSelectionViewPosition) [self.masterSelectionView adjustSelectedCellHeightWithOffset:distance andScrollView:scrollView];
+
         _lastOffset = currentOffset;
     }
 }
-
 
 -(void)setIsScrollingFast:(BOOL)isScrollingFast{
     _isScrollingFast = isScrollingFast;
@@ -307,15 +349,11 @@ static CGFloat const baseTopInset = 64.f;
 }
 
 -(void)toggleCellVisibility:(JDCollectionViewCell*)cell{
-    
     if (![_centerCell isEqual:cell]) {
         _centerCell.alpha = 0.1f;
-
         _centerCell = cell;
     }
-    
     _centerCell.alpha = 1.f;
-
 }
 
 #pragma Mark SelectionView Controls
@@ -326,6 +364,10 @@ static CGFloat const baseTopInset = 64.f;
 
 -(UIEdgeInsets)getNewCollectionViewInset{
     return UIEdgeInsetsMake(self.masterSelectionView.frame.size.height + baseTopInset, 0, 0, 0);
+}
+
+-(UIEdgeInsets)baseEdgeInsets{
+    return UIEdgeInsetsMake(baseTopInset, 0, 0, 0);
 }
 
 -(CGFloat)getCurrentSelectionViewMaxHeight{
