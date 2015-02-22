@@ -70,8 +70,11 @@
         self.imageSectionView.hidden = YES;
         self.headerView.hidden = NO;
     }
-    
     self.shouldShowImages = showImages;
+}
+
+-(void)shouldHideTitleBar:(BOOL)hide{
+    self.headerView.titleBar.hidden = hide;
 }
 
 -(void)tapped:(id)sender{

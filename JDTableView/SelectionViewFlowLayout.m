@@ -98,7 +98,6 @@
     return -(p * (p - 2));
 }
 
-
 -(CGFloat)quarticEaseIn:(CGFloat)p{
     return p * p * p * p;
 }

@@ -11,11 +11,12 @@
 #import "SelectionViewFlowLayout.h"
 #import "JDCollectionViewCell.h"
 #import "JDSelectionViewFooter.h"
+#import "JDTitleView.h"
 
 
 @interface MasterSelectionView()
 
-@property(nonatomic, strong)UILabel* titleLabel;
+@property(nonatomic, strong)JDTitleView* titleView;
 @property(nonatomic, strong)JDSelectionView* selectionView;
 @property(nonatomic, strong)JDSelectionViewFooter* swipeDismissView;
 
@@ -37,7 +38,7 @@
 
 static CGFloat const selectedViewDelayExpandingTheshold = 200.f;
 //  ^^  Used to delay pull down on selection view
-
+static CGFloat const selectionViewBottomInset = 10;
 static CGFloat const titleDisplayThreshold = 41.f;
 static CGFloat const maximumCellHeight = 41.f;
 
@@ -69,12 +70,12 @@ static CGFloat const maximumCellHeight = 41.f;
         self.selectionView.backgroundColor = [UIColor clearColor];
         [self addSubview:self.selectionView];
         
-        self.titleLabel = [[UILabel alloc] init];
-        self.titleLabel.text = @"SELECTED";
-        self.titleLabel.textColor = [UIColor whiteColor];
-        self.titleLabel.alpha = 0.f;
-        self.titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
-        [self addSubview:self.titleLabel];
+        self.titleView = [[JDTitleView alloc] init];
+        self.titleView.titleLabel.text = @"SELECTED";
+        [self.titleView setTextColor:[UIColor whiteColor]];
+        self.titleView.alpha = 0.f;
+        self.titleView.translatesAutoresizingMaskIntoConstraints = NO;
+        [self addSubview:self.titleView];
         
         self.swipeDismissView = [[JDSelectionViewFooter alloc] init];
         self.swipeDismissView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -101,19 +102,19 @@ static CGFloat const maximumCellHeight = 41.f;
     self.maxItemsCanBeDisplayed = (fullFrame.size.height/2)/maximumCellHeight;
 }
 
--(void)dragFrame:(UIPanGestureRecognizer*)pan{
-    CGPoint translate = [pan translationInView:self];
-    CGFloat newOffset = translate.y - self.lastPanOffset;
-    
-//    self.frame = UIEdgeInsetsInsetRect(self.frame, UIEdgeInsetsMake(0, 0, -newOffset, 0));
-    [self.selectionViewDelegate adjustScrollViewOffsetTo:-newOffset];
-    
-    self.lastPanOffset = translate.y;
-    
-    if(pan.state == UIGestureRecognizerStateEnded){
-        self.lastPanOffset = 0.f;
-    }
-}
+//-(void)dragFrame:(UIPanGestureRecognizer*)pan{
+//    CGPoint translate = [pan translationInView:self];
+//    CGFloat newOffset = translate.y - self.lastPanOffset;
+//    
+////    self.frame = UIEdgeInsetsInsetRect(self.frame, UIEdgeInsetsMake(0, 0, -newOffset, 0));
+//    [self.selectionViewDelegate adjustScrollViewOffsetTo:-newOffset];
+//    
+//    self.lastPanOffset = translate.y;
+//    
+//    if(pan.state == UIGestureRecognizerStateEnded){
+//        self.lastPanOffset = 0.f;
+//    }
+//}
 
 -(void)swipedToClose{
     [self.selectionViewDelegate selectionsSwipedClosed];
@@ -133,6 +134,12 @@ static CGFloat const maximumCellHeight = 41.f;
         self.defaultConstraintsSet = YES;
     }
     [super layoutSubviews];
+}
+
+
+-(void)setViewIsLockedUp:(BOOL)viewIsLockedUp{
+    _viewIsLockedUp = viewIsLockedUp;
+    [self.swipeDismissView viewIsLocked:viewIsLockedUp];
 }
 
 -(NSArray*)defaultConstraints{
@@ -160,9 +167,11 @@ static CGFloat const maximumCellHeight = 41.f;
                                     ];
     [constraints addObject:self.backgroundTopConstraint];
     
-    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[_selectionView]|"
+    
+    NSDictionary* metrics = @{@"bottomInset" : @(selectionViewBottomInset)};
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[_selectionView]-bottomInset-|"
                                                                              options:0
-                                                                             metrics:nil
+                                                                             metrics:metrics
                                                                                views:NSDictionaryOfVariableBindings(_selectionView)
                                       ]];
     
@@ -172,16 +181,16 @@ static CGFloat const maximumCellHeight = 41.f;
                                                                                views:NSDictionaryOfVariableBindings(_selectionView)
                                       ]];
     
-    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[_titleLabel]|"
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[_titleView]|"
                                                                              options:0
                                                                              metrics:nil
-                                                                               views:NSDictionaryOfVariableBindings(_titleLabel)
+                                                                               views:NSDictionaryOfVariableBindings(_titleView)
                                       ]];
     
-    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[_titleLabel]|"
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[_titleView]|"
                                                                              options:0
                                                                              metrics:nil
-                                                                               views:NSDictionaryOfVariableBindings(_titleLabel)
+                                                                               views:NSDictionaryOfVariableBindings(_titleView)
                                       ]];
     
     [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(>=0)-[_swipeDismissView(==25)]|"
@@ -226,7 +235,9 @@ static CGFloat const maximumCellHeight = 41.f;
     [cell shouldShowImages:NO];
     cell.indexPath = indexPath;
     [cell setInfoWithItem:item];
-
+    
+    [cell shouldHideTitleBar:(indexPath.row == self.selections.count - 1)];
+        
     return cell;
 }
 
@@ -281,7 +292,7 @@ static CGFloat const maximumCellHeight = 41.f;
             self.selectedCellHeight -= offsetDivision;
             
             self.frame = CGRectMake(0, self.frame.origin.y, self.frame.size.width, self.frame.size.height - offsetChange);
-            
+
             if (self.selectedCellHeight > maximumCellHeight && scrollView.contentOffset.y > 0.f){
                 self.selectedCellHeight = maximumCellHeight;
                 self.frame = [self getMaxSizeFrame];
@@ -301,8 +312,8 @@ static CGFloat const maximumCellHeight = 41.f;
 }
 
 -(void)adjustAlphas{
-    self.titleLabel.alpha = self.selectionView.frame.size.height <= titleDisplayThreshold;
-    self.selectionView.alpha = !self.titleLabel.alpha;
+    self.titleView.alpha = self.selectionView.frame.size.height <= titleDisplayThreshold;
+    self.selectionView.alpha = !self.titleView.alpha;
 }
 
 -(BOOL)canShrinkSelectionViewWithCurrentOffset:(CGPoint)collectionOffset{
@@ -338,6 +349,13 @@ static CGFloat const maximumCellHeight = 41.f;
 
 
 
+#pragma Mark Custom View Logic
+
+-(void)adjustCounter{
+    self.titleView.counterLabel.text = [NSString stringWithFormat:@"%ld", self.selections.count];
+}
+
+
 #pragma Mark Add Items ----------------
 
 -(void)addItem:(CollectionViewItem *)item{
@@ -347,10 +365,14 @@ static CGFloat const maximumCellHeight = 41.f;
     NSIndexPath* newSelectionIndex = [NSIndexPath indexPathForItem:(_selections.count - 1) inSection:0];
     [_selectionView insertItemsAtIndexPaths:@[newSelectionIndex]];
     
+    [self.selectionView reloadSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, 1)]];
+//    ^^ used to re-draw titlebar
     [self animateCollectionToMaxSize];
+    [self adjustCounter];
 }
 
 -(void)removeItem:(CollectionViewItem *)item{
+    
     __block NSIndexPath *indexPathToRemove;
     [_selections enumerateObjectsUsingBlock:^(CollectionViewItem* tempItem, NSUInteger idx, BOOL *stop) {
         if ([tempItem isEqual:item]) {
@@ -362,6 +384,7 @@ static CGFloat const maximumCellHeight = 41.f;
     [_selectionView deleteItemsAtIndexPaths:@[indexPathToRemove]];
     
     [self animateCollectionToMaxSize];
+    [self adjustCounter];
 }
 
 -(void)animateCollectionToMaxSize{
@@ -387,7 +410,7 @@ static CGFloat const maximumCellHeight = 41.f;
 -(CGFloat)getMaxHeighForSelectionView{
     CGFloat height = self.selections.count * maximumCellHeight;
     if (height > self.fullFrame.size.height/2) height = self.maxItemsCanBeDisplayed * maximumCellHeight;
-    return height;
+    return height + selectionViewBottomInset;
 }
 
 -(UIEdgeInsets)getInsetForSelectionFrame{

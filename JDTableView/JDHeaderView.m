@@ -12,7 +12,6 @@
 
 @property(nonatomic)BOOL initialConstraintsSet;
 @property(nonatomic, strong)UIView* metrics;
-@property(nonatomic, strong)UIView* line;
 @property(nonatomic, strong)UIImageView* cameraIcon;
 
 @end
@@ -55,11 +54,11 @@
         self.cameraIcon.contentMode = UIViewContentModeScaleAspectFit;
         [self.metrics addSubview:self.cameraIcon];
         
-        self.line = [[UIView alloc] init];
-        self.line.translatesAutoresizingMaskIntoConstraints = NO;
-        self.line.backgroundColor = [UIColor whiteColor];
-        self.line.alpha = .25f;
-        [self addSubview:self.line];
+        self.titleBar = [[UIView alloc] init];
+        self.titleBar.translatesAutoresizingMaskIntoConstraints = NO;
+        self.titleBar.backgroundColor = [UIColor whiteColor];
+        self.titleBar.alpha = .25f;
+        [self addSubview:self.titleBar];
         
     }
     
@@ -99,16 +98,16 @@
                                                                                views:NSDictionaryOfVariableBindings(_metrics, _titleLabel)
                                       ]];
     
-    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[_line]|"
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[_titleBar]|"
                                                                              options:0
                                                                              metrics:nil
-                                                                               views:NSDictionaryOfVariableBindings(_line)
+                                                                               views:NSDictionaryOfVariableBindings(_titleBar)
                                       ]];
     
-    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(>=0)-[_line(==line)]|"
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(>=0)-[_titleBar(==line)]|"
                                                                              options:0
                                                                              metrics:metrics
-                                                                               views:NSDictionaryOfVariableBindings(_line)
+                                                                               views:NSDictionaryOfVariableBindings(_titleBar)
                                       ]];
     return constraints;
 }

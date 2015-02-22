@@ -10,4 +10,6 @@
 
 @interface JDSelectionViewFooter : UIView
 
+-(void)viewIsLocked:(BOOL)locked;
+
 @end

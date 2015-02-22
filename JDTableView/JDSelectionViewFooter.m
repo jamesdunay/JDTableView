@@ -44,6 +44,12 @@
     [super layoutSubviews];
 }
 
+
+-(void)viewIsLocked:(BOOL)locked{
+    if (locked) self.divider.alpha = 1.f;
+    else self.divider.alpha = .3;
+}
+
 -(NSMutableArray*)defaultConstraints{
     NSMutableArray* constraints = [NSMutableArray new];
     

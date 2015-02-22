@@ -28,6 +28,7 @@
 
 -(void)setInfoWithItem:(CollectionViewItem *)item;
 -(void)shouldShowImages:(BOOL)showImages;
+-(void)shouldHideTitleBar:(BOOL)hide;
 -(void)toggleSelected;
 
 @end
