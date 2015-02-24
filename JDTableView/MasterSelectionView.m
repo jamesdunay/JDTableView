@@ -86,7 +86,7 @@ static CGFloat const maximumCellHeight = 41.f;
         
         UISwipeGestureRecognizer* swipeUp = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipedToClose)];
         swipeUp.direction = UISwipeGestureRecognizerDirectionUp;
-//
+
 //        UIPanGestureRecognizer* pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(dragFrame:)];
 //        [self.swipeDismissView addGestureRecognizer:pan];
         
@@ -120,11 +120,14 @@ static CGFloat const maximumCellHeight = 41.f;
 
 -(void)swipedToClose{
 //    [self.selectionViewDelegate selectionsSwipedClosed];
-
+    
+    self.selectionView.layer.speed = .2f;
     
     [self.selectionView performBatchUpdates:^{
-        [self.selectionView reloadData];
         [UIView animateWithDuration:1.f animations:^{
+            [self.selectionViewDelegate moveMaskToPosition:[self getMinSizeFrame].size.height];
+            self.selectedCellHeight = titleDisplayThreshold/self.numberOfVisibleCells;
+            [self.selectionView reloadData];
             self.frame = [self getMinSizeFrame];
             [self layoutSubviews];
         }];
@@ -135,11 +138,13 @@ static CGFloat const maximumCellHeight = 41.f;
 
 -(void)swipedToOpen{
     self.viewHasBeenSwipedOpen = YES;
-
+    
     
     [self.selectionView performBatchUpdates:^{
+        
         [self.selectionView reloadData];
         [UIView animateWithDuration:1.f animations:^{
+            [self.selectionViewDelegate moveMaskToPosition:[self getMaxSizeFrame].size.height];
             self.frame = [self getMaxSizeFrame];
             [self layoutSubviews];
         }];

@@ -175,8 +175,15 @@ static CGFloat const selectionViewBottomInset = 10;
     [self.view sendSubviewToBack:self.backgroundView];
 }
 
-- (void)createMaskWithOffset{
-    
+//-----------------------------------------------
+//------------Simplify THIS----------------------
+//-----------------------------------------------
+
+-(void)moveMaskToPosition:(CGFloat)yPos{
+    [self createMaskWithOffset:yPos];
+}
+
+- (void)createMaskWithInset{
     CAGradientLayer *maskLayer = [CAGradientLayer layer];
     maskLayer.colors = @[
                          (id)[UIColor clearColor].CGColor,
@@ -188,11 +195,27 @@ static CGFloat const selectionViewBottomInset = 10;
     self.collectionViewContainer.layer.mask.opacity = 1.f;
 }
 
+- (void)createMaskWithOffset:(CGFloat)yPos{
+    
+    CAGradientLayer *maskLayer = [CAGradientLayer layer];
+    maskLayer.colors = @[
+                         (id)[UIColor clearColor].CGColor,
+                         (id)[UIColor colorWithWhite:1.f alpha:.8f].CGColor,
+                         (id)[UIColor colorWithWhite:1.f alpha:1.f].CGColor];
+    maskLayer.locations = @[@((10.f/self.imageCollectionView.frame.size.height)) , @((70.f/self.imageCollectionView.frame.size.height)), @((300.f/self.imageCollectionView.frame.size.height))];
+    maskLayer.frame = UIEdgeInsetsInsetRect(self.imageCollectionView.frame, UIEdgeInsetsMake(yPos + 64, 0, 0, 0));
+    self.collectionViewContainer.layer.mask = maskLayer;
+    self.collectionViewContainer.layer.mask.opacity = 1.f;
+}
+//-----------------------------------------------
+//-----------------------------------------------
+//-----------------------------------------------
+
+
 #pragma Mark SelectionView Delegates
 
 -(void)adjustScrollViewOffsetTo:(CGFloat)offset{
     CGPoint currentOffset = self.imageCollectionView.contentOffset;
-    NSLog(@"Adjust offset");
     [self.imageCollectionView setContentOffset:CGPointMake(0, currentOffset.y + offset)];
 }
 
@@ -201,7 +224,6 @@ static CGFloat const selectionViewBottomInset = 10;
     self.startingTopInset = self.getNewCollectionViewInset.top;
     CGPoint newContentOffset = CGPointMake(0, self.collectionView.contentOffset.y + (self.masterSelectionView.frame.size.height - 38.f));
 //    ^^ using -38 here to make sure that the offset will close the view just past its MINIMUM threshold. This ensures that the 'selected' view will display.
-    NSLog(@"Swipe Closed");
     [self.imageCollectionView setContentOffset:newContentOffset animated:YES];
 }
 
@@ -209,13 +231,11 @@ static CGFloat const selectionViewBottomInset = 10;
     if (self.masterSelectionView.viewIsLockedUp) {
         self.collectionsNeedReload = YES;
     }
-
-    NSLog(@"starting open");
+    
     self.startingTopInset = self.getNewCollectionViewInset.top;
     CGPoint newContentOffset = CGPointMake(0, self.collectionView.contentOffset.y - maximumSelectionViewHeight + 40.f);
 //    ^^ Why + 40?
     [self.imageCollectionView setContentOffset:newContentOffset animated:YES];
-    NSLog(@"done opening");
 }
 
 -(void)getNewContentInsetsAndAdjustOffset{
@@ -227,13 +247,9 @@ static CGFloat const selectionViewBottomInset = 10;
     CGFloat newOffset = self.collectionView.contentOffset.y - offsetAdjustment;
 
     self.lockSelectionViewPosition = YES;
-    NSLog(@"1-------------------------------");
     [self.imageCollectionView setContentOffset:CGPointMake(0, newOffset) animated:NO];
     [self.collectionView setContentOffset:CGPointMake(0, newOffset) animated:NO];
-    
-    
-    
-    NSLog(@"3-------------------------------");
+
     self.lockSelectionViewPosition = NO;
 }
 
@@ -302,9 +318,7 @@ static CGFloat const selectionViewBottomInset = 10;
 
     if (self.collectionsNeedReload){
         self.collectionsNeedReload = NO;
-        NSLog(@"Getting new inset");
         [self getNewContentInsetsAndAdjustOffset];
-        NSLog(@"Done With Inset");
     }
 }
 
@@ -315,7 +329,7 @@ static CGFloat const selectionViewBottomInset = 10;
 -(void)scrollViewDidScroll:(UIScrollView *)scrollView{
 
     if (scrollView.tag == 3) {
-        NSLog(@"Starting Scroll");
+
         self.collectionView.contentOffset = scrollView.contentOffset;
         self.collectionView.scrollIndicatorInsets = [self getNewCollectionViewInset];
         scrollView.scrollIndicatorInsets = [self getNewCollectionViewInset];
@@ -324,7 +338,7 @@ static CGFloat const selectionViewBottomInset = 10;
         self.backgroundView.frame = CGRectMake(0, -newYPos , self.backgroundView.frame.size.width, self.backgroundView.frame.size.height);
         self.masterSelectionView.backgroundTopConstraint.constant = -newYPos - 64;
 
-        [self createMaskWithOffset];
+        [self createMaskWithInset];
     
 //   self.backgroundView.frame = CGRectMake(scrollView.contentOffset.y, 0, self.backgroundView.frame.size.width, self.backgroundView.frame.size.height);
 //    ^^ THIS IS REAL COOL, could be some sort of section switching, like maybe backgrounds for something like seasons? Notice the Y offset in the X
@@ -332,9 +346,7 @@ static CGFloat const selectionViewBottomInset = 10;
         CGPoint currentOffset = scrollView.contentOffset;
         CGFloat distance = currentOffset.y - _lastOffset.y;
         
-        NSLog(@"2");
         if(!self.lockSelectionViewPosition) [self.masterSelectionView adjustSelectedCellHeightWithOffset:distance andScrollView:scrollView];
-        NSLog(@"2.5");
         
         _lastOffset = currentOffset;
         
