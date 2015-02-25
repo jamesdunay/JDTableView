@@ -20,7 +20,7 @@ static CGFloat const baseThreshold = 55.f;
 static CGFloat const activeThreshold = 6.f;
 static CGFloat const maximumCellHeight = 170.f;
 static CGFloat const baseTopInset = 64.f;
-static CGFloat const selectionViewBottomInset = 10;
+static CGFloat const selectionViewBottomInset = 20;
 
 
 //static CGFloat const minimumCellHeight = 0.f;
@@ -175,13 +175,10 @@ static CGFloat const selectionViewBottomInset = 10;
     [self.view sendSubviewToBack:self.backgroundView];
 }
 
-//-----------------------------------------------
-//------------Simplify THIS----------------------
-//-----------------------------------------------
+//------------------------------------------------------------
+//------------ Mask Movement and creation -------
+//------------------------------------------------------------
 
--(void)moveMaskToPosition:(CGFloat)yPos{
-    [self createMaskWithOffset:yPos];
-}
 
 - (void)createMaskWithInset{
     CAGradientLayer *maskLayer = [CAGradientLayer layer];
@@ -195,21 +192,21 @@ static CGFloat const selectionViewBottomInset = 10;
     self.collectionViewContainer.layer.mask.opacity = 1.f;
 }
 
-- (void)createMaskWithOffset:(CGFloat)yPos{
+- (void)moveMaskShouldOpen:(BOOL)isOpening isDragging:(BOOL)isDragging toPosition:(CGFloat)yPos{
+
     
-    CAGradientLayer *maskLayer = [CAGradientLayer layer];
-    maskLayer.colors = @[
-                         (id)[UIColor clearColor].CGColor,
-                         (id)[UIColor colorWithWhite:1.f alpha:.8f].CGColor,
-                         (id)[UIColor colorWithWhite:1.f alpha:1.f].CGColor];
-    maskLayer.locations = @[@((10.f/self.imageCollectionView.frame.size.height)) , @((70.f/self.imageCollectionView.frame.size.height)), @((300.f/self.imageCollectionView.frame.size.height))];
-    maskLayer.frame = UIEdgeInsetsInsetRect(self.imageCollectionView.frame, UIEdgeInsetsMake(yPos + 64, 0, 0, 0));
-    self.collectionViewContainer.layer.mask = maskLayer;
-    self.collectionViewContainer.layer.mask.opacity = 1.f;
+    if (isDragging) {
+        self.collectionViewContainer.layer.speed = 10.f;
+    }
+    
+//    if (isOpening) self.collectionViewContainer.layer.speed = 1.0f;
+//    else self.collectionViewContainer.layer.speed = .8f;
+
+    self.collectionViewContainer.layer.mask.frame = UIEdgeInsetsInsetRect(self.collectionViewContainer.frame, UIEdgeInsetsMake(yPos + 64, 0, 0, 0));
 }
+//------------------------------------------------------------
 //-----------------------------------------------
-//-----------------------------------------------
-//-----------------------------------------------
+//------------------------------------------------------------
 
 
 #pragma Mark SelectionView Delegates
@@ -231,7 +228,7 @@ static CGFloat const selectionViewBottomInset = 10;
     if (self.masterSelectionView.viewIsLockedUp) {
         self.collectionsNeedReload = YES;
     }
-    
+
     self.startingTopInset = self.getNewCollectionViewInset.top;
     CGPoint newContentOffset = CGPointMake(0, self.collectionView.contentOffset.y - maximumSelectionViewHeight + 40.f);
 //    ^^ Why + 40?

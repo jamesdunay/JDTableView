@@ -38,7 +38,7 @@
 
 static CGFloat const selectedViewDelayExpandingTheshold = 200.f;
 //  ^^  Used to delay pull down on selection view
-static CGFloat const selectionViewBottomInset = 10;
+static CGFloat const selectionViewBottomInset = 20;
 static CGFloat const titleDisplayThreshold = 41.f;
 static CGFloat const maximumCellHeight = 41.f;
 
@@ -84,17 +84,18 @@ static CGFloat const maximumCellHeight = 41.f;
         [self addSubview:self.swipeDismissView];
         
         
-        UISwipeGestureRecognizer* swipeUp = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipedToClose)];
-        swipeUp.direction = UISwipeGestureRecognizerDirectionUp;
+//        UISwipeGestureRecognizer* swipeUp = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipedToClose)];
+//        swipeUp.direction = UISwipeGestureRecognizerDirectionUp;
 
-//        UIPanGestureRecognizer* pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(dragFrame:)];
-//        [self.swipeDismissView addGestureRecognizer:pan];
+        UIPanGestureRecognizer* pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(dragFrame:)];
+        [self.swipeDismissView addGestureRecognizer:pan];
         
-        UISwipeGestureRecognizer* swipeDown = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipedToOpen)];
-        swipeDown.direction = UISwipeGestureRecognizerDirectionDown;
+//        UISwipeGestureRecognizer* swipeDown = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipedToOpen)];
+//        swipeDown.direction = UISwipeGestureRecognizerDirectionDown;
         
-        [self.swipeDismissView addGestureRecognizer:swipeUp];
-        [self.swipeDismissView addGestureRecognizer:swipeDown];
+//        [self.swipeDismissView addGestureRecognizer:swipeUp];
+//        [self.swipeDismissView addGestureRecognizer:swipeDown];
+        [self.swipeDismissView addGestureRecognizer:pan];
     }
     return self;
 }
@@ -104,51 +105,64 @@ static CGFloat const maximumCellHeight = 41.f;
     self.maxItemsCanBeDisplayed = (fullFrame.size.height/2)/maximumCellHeight;
 }
 
-//-(void)dragFrame:(UIPanGestureRecognizer*)pan{
-//    CGPoint translate = [pan translationInView:self];
-//    CGFloat newOffset = translate.y - self.lastPanOffset;
-//    
-////    self.frame = UIEdgeInsetsInsetRect(self.frame, UIEdgeInsetsMake(0, 0, -newOffset, 0));
-//    [self.selectionViewDelegate adjustScrollViewOffsetTo:-newOffset];
-//    
-//    self.lastPanOffset = translate.y;
-//    
-//    if(pan.state == UIGestureRecognizerStateEnded){
-//        self.lastPanOffset = 0.f;
-//    }
-//}
+-(void)dragFrame:(UIPanGestureRecognizer*)pan{
+    CGPoint translate = [pan translationInView:self];
+    CGFloat newOffset = translate.y - self.lastPanOffset;
+    
+    self.frame = UIEdgeInsetsInsetRect(self.frame, UIEdgeInsetsMake(0, 0, -newOffset, 0));
+    [self.selectionViewDelegate moveMaskShouldOpen:NO isDragging:YES toPosition:self.frame.size.height + newOffset];
+    
+    
+    self.lastPanOffset = translate.y;
+    
+    if(pan.state == UIGestureRecognizerStateEnded){
+        self.lastPanOffset = 0.f;
+    }
+}
 
 -(void)swipedToClose{
 //    [self.selectionViewDelegate selectionsSwipedClosed];
     
-    self.selectionView.layer.speed = .2f;
-    
     [self.selectionView performBatchUpdates:^{
-        [UIView animateWithDuration:1.f animations:^{
-            [self.selectionViewDelegate moveMaskToPosition:[self getMinSizeFrame].size.height];
-            self.selectedCellHeight = titleDisplayThreshold/self.numberOfVisibleCells;
-            [self.selectionView reloadData];
-            self.frame = [self getMinSizeFrame];
-            [self layoutSubviews];
-        }];
-    } completion:^(BOOL finished) {}];
-    
+        
+        [UIView animateWithDuration:.8f
+                              delay:0.f
+             usingSpringWithDamping:.9f
+              initialSpringVelocity:14.f
+                            options:UIViewAnimationOptionCurveLinear
+                         animations:^{
+                             [self.selectionViewDelegate moveMaskShouldOpen:NO isDragging:NO toPosition:[self getMinSizeFrame].size.height];
+                             
+                             self.selectedCellHeight = titleDisplayThreshold/self.numberOfVisibleCells;
+                             [self.selectionView reloadData];
+                             self.frame = [self getMinSizeFrame];
+                             [self layoutSubviews];
+
+                         } completion:nil];
+    }completion:^(BOOL finished) {}];
+
     self.viewIsLockedUp = YES;
 }
 
 -(void)swipedToOpen{
     self.viewHasBeenSwipedOpen = YES;
     
-    
     [self.selectionView performBatchUpdates:^{
-        
-        [self.selectionView reloadData];
-        [UIView animateWithDuration:1.f animations:^{
-            [self.selectionViewDelegate moveMaskToPosition:[self getMaxSizeFrame].size.height];
-            self.frame = [self getMaxSizeFrame];
-            [self layoutSubviews];
-        }];
-    } completion:^(BOOL finished) {}];
+        self.selectedCellHeight = maximumCellHeight;
+
+    [UIView animateWithDuration:.7f
+                          delay:0.f
+         usingSpringWithDamping:.7f
+          initialSpringVelocity:14.f
+                        options:UIViewAnimationOptionCurveLinear
+                     animations:^{
+                         [self.selectionViewDelegate moveMaskShouldOpen:YES isDragging:NO toPosition:[self getMaxSizeFrame].size.height];
+                         self.frame = [self getMaxSizeFrame];
+                         [self layoutSubviews];
+                         [self.selectionView reloadData];
+                     } completion:nil];
+    }completion:^(BOOL finished) {}];
+
 //    [self.selectionViewDelegate selectionsSwipedOpen:self.getMaxHeighForSelectionView];
     self.viewIsLockedUp = NO;
 }
@@ -159,6 +173,8 @@ static CGFloat const maximumCellHeight = 41.f;
         [self addConstraints:[self defaultConstraints]];
         self.defaultConstraintsSet = YES;
     }
+    
+    [self.titleView layoutSubviews];
     [super layoutSubviews];
 }
 
@@ -219,7 +235,7 @@ static CGFloat const maximumCellHeight = 41.f;
                                                                                views:NSDictionaryOfVariableBindings(_titleView)
                                       ]];
     
-    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(>=0)-[_swipeDismissView(==25)]|"
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(>=0)-[_swipeDismissView(==45)]|"
                                                                              options:0
                                                                              metrics:nil
                                                                                views:NSDictionaryOfVariableBindings(_swipeDismissView)
@@ -325,7 +341,7 @@ static CGFloat const maximumCellHeight = 41.f;
                 self.viewHasBeenSwipedOpen = NO;
             }
 
-            if (self.frame.size.height < titleDisplayThreshold) {
+            if (self.frame.size.height < titleDisplayThreshold + selectionViewBottomInset) {
                 self.selectedCellHeight = titleDisplayThreshold/self.numberOfVisibleCells;
                 self.frame = [self getMinSizeFrame];
             }
@@ -426,7 +442,7 @@ static CGFloat const maximumCellHeight = 41.f;
 
 
 -(CGRect)getMinSizeFrame{
-    return CGRectMake(0, self.frame.origin.y, self.fullFrame.size.width, titleDisplayThreshold);
+    return CGRectMake(0, self.frame.origin.y, self.fullFrame.size.width, titleDisplayThreshold + selectionViewBottomInset);
 }
 
 -(CGRect)getMaxSizeFrame{
