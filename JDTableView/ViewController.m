@@ -186,22 +186,20 @@ static CGFloat const selectionViewBottomInset = 20;
                          (id)[UIColor clearColor].CGColor,
                          (id)[UIColor colorWithWhite:1.f alpha:.8f].CGColor,
                          (id)[UIColor colorWithWhite:1.f alpha:1.f].CGColor];
-    maskLayer.locations = @[@((10.f/self.imageCollectionView.frame.size.height)) , @((70.f/self.imageCollectionView.frame.size.height)), @((300.f/self.imageCollectionView.frame.size.height))];
+    maskLayer.locations = @[@((10.f/self.imageCollectionView.frame.size.height)) , @((90.f/self.imageCollectionView.frame.size.height)), @((300.f/self.imageCollectionView.frame.size.height))];
     maskLayer.frame = UIEdgeInsetsInsetRect(self.imageCollectionView.frame, [self getNewCollectionViewInset]);
     self.collectionViewContainer.layer.mask = maskLayer;
     self.collectionViewContainer.layer.mask.opacity = 1.f;
 }
 
 - (void)moveMaskShouldOpen:(BOOL)isOpening isDragging:(BOOL)isDragging toPosition:(CGFloat)yPos{
-
     
-    if (isDragging) {
-        self.collectionViewContainer.layer.speed = 10.f;
-    }
-    
-//    if (isOpening) self.collectionViewContainer.layer.speed = 1.0f;
-//    else self.collectionViewContainer.layer.speed = .8f;
+    if (isOpening) self.collectionViewContainer.layer.speed = 1.0f;
+    else self.collectionViewContainer.layer.speed = .8f;
 
+    if (isDragging) self.collectionViewContainer.layer.speed = 10.f;
+//    ^^ massive speed here to match users dragging movements
+    
     self.collectionViewContainer.layer.mask.frame = UIEdgeInsetsInsetRect(self.collectionViewContainer.frame, UIEdgeInsetsMake(yPos + 64, 0, 0, 0));
 }
 //------------------------------------------------------------

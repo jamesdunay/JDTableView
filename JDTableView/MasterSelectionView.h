@@ -19,7 +19,7 @@
 -(void)moveMaskShouldOpen:(BOOL)isOpening isDragging:(BOOL)isDragging toPosition:(CGFloat)yPos;
 @end
 
-@interface MasterSelectionView : UIView <UICollectionViewDataSource, UICollectionViewDelegate>
+@interface MasterSelectionView : UIView <UICollectionViewDataSource, UICollectionViewDelegate, UIGestureRecognizerDelegate>
 
 @property (nonatomic) CGFloat selectedCellHeight;
 @property (nonatomic) CGRect fullFrame;
