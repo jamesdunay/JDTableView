@@ -15,8 +15,9 @@
 -(void)selectionsSwipedClosed;
 -(void)selectionsSwipedOpen:(CGFloat)maximumSelectionViewHeight;
 -(void)adjustScrollViewOffsetTo:(CGFloat)offset;
--(void)getNewContentInsetsAndAdjustOffset;
+-(void)getNewContentInsetsAndAdjustOffset:(BOOL)shouldAdjustOffset;
 -(void)moveMaskShouldOpen:(BOOL)isOpening isDragging:(BOOL)isDragging toPosition:(CGFloat)yPos;
+-(void)animateCollectionToTopIfPossible;
 @end
 
 @interface MasterSelectionView : UIView <UICollectionViewDataSource, UICollectionViewDelegate, UIGestureRecognizerDelegate>

@@ -156,7 +156,7 @@ static CGFloat const selectionViewBottomInset = 20;
     [self.view addSubview:self.collectionViewContainer];
     
     self.masterSelectionView = [[MasterSelectionView alloc] init];
-    self.masterSelectionView.fullFrame = CGRectMake(0, 64, self.view.frame.size.width, self.view.frame.size.height - 64 - selectionViewBottomInset);
+    self.masterSelectionView.fullFrame = CGRectMake(0, 64, self.view.frame.size.width, self.view.frame.size.height - 64);
     self.masterSelectionView.selectionViewDelegate = self;
     self.masterSelectionView.backgroundImageView.image = [UIImage imageNamed:@"background_3.png"];
     [self.view addSubview:self.masterSelectionView];
@@ -202,6 +202,7 @@ static CGFloat const selectionViewBottomInset = 20;
     
     self.collectionViewContainer.layer.mask.frame = UIEdgeInsetsInsetRect(self.collectionViewContainer.frame, UIEdgeInsetsMake(yPos + 64, 0, 0, 0));
 }
+
 //------------------------------------------------------------
 //-----------------------------------------------
 //------------------------------------------------------------
@@ -209,43 +210,37 @@ static CGFloat const selectionViewBottomInset = 20;
 
 #pragma Mark SelectionView Delegates
 
--(void)adjustScrollViewOffsetTo:(CGFloat)offset{
-    CGPoint currentOffset = self.imageCollectionView.contentOffset;
-    [self.imageCollectionView setContentOffset:CGPointMake(0, currentOffset.y + offset)];
-}
-
--(void)selectionsSwipedClosed{
-    self.collectionsNeedReload = YES;
-    self.startingTopInset = self.getNewCollectionViewInset.top;
-    CGPoint newContentOffset = CGPointMake(0, self.collectionView.contentOffset.y + (self.masterSelectionView.frame.size.height - 38.f));
-//    ^^ using -38 here to make sure that the offset will close the view just past its MINIMUM threshold. This ensures that the 'selected' view will display.
-    [self.imageCollectionView setContentOffset:newContentOffset animated:YES];
-}
-
--(void)selectionsSwipedOpen:(CGFloat)maximumSelectionViewHeight{
-    if (self.masterSelectionView.viewIsLockedUp) {
-        self.collectionsNeedReload = YES;
+-(void)animateCollectionToTopIfPossible{
+    if (self.collectionView.contentOffset.y <= self.masterSelectionView.frame.size.height) {
+        [self.collectionView performBatchUpdates:^{
+            [self.collectionView reloadData];
+        } completion:^(BOOL finished) {}];
+        
+        [self.imageCollectionView performBatchUpdates:^{
+            [self.imageCollectionView reloadData];
+        } completion:^(BOOL finished) {}];
     }
-
-    self.startingTopInset = self.getNewCollectionViewInset.top;
-    CGPoint newContentOffset = CGPointMake(0, self.collectionView.contentOffset.y - maximumSelectionViewHeight + 40.f);
-//    ^^ Why + 40?
-    [self.imageCollectionView setContentOffset:newContentOffset animated:YES];
 }
 
--(void)getNewContentInsetsAndAdjustOffset{
-    
-    [self.collectionView reloadData];
-    [self.imageCollectionView reloadData];
-    CGFloat newTopInset = self.getNewCollectionViewInset.top;
-    CGFloat offsetAdjustment = (self.startingTopInset - newTopInset);
-    CGFloat newOffset = self.collectionView.contentOffset.y - offsetAdjustment;
+-(void)getNewContentInsetsAndAdjustOffset:(BOOL)shouldAdjustOffset{
+    if (self.collectionView.contentOffset.y >= self.masterSelectionView.frame.size.height) {
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            self.collectionsNeedReload = YES;
+            [self.collectionView reloadData];
+            [self.imageCollectionView reloadData];
 
-    self.lockSelectionViewPosition = YES;
-    [self.imageCollectionView setContentOffset:CGPointMake(0, newOffset) animated:NO];
-    [self.collectionView setContentOffset:CGPointMake(0, newOffset) animated:NO];
-
-    self.lockSelectionViewPosition = NO;
+            CGFloat newTopInset = self.getNewCollectionViewInset.top;
+            CGFloat offsetAdjustment = (self.startingTopInset - newTopInset);
+            CGFloat newOffset = self.collectionView.contentOffset.y - offsetAdjustment;
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self.imageCollectionView setContentOffset:CGPointMake(0, newOffset) animated:NO];
+                [self.collectionView setContentOffset:CGPointMake(0, newOffset) animated:NO];
+                self.collectionsNeedReload = NO;
+            });
+            self.startingTopInset = newTopInset;
+        });
+    }
 }
 
 -(NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section{
@@ -300,6 +295,12 @@ static CGFloat const selectionViewBottomInset = 20;
     } completion:^(BOOL finished) {}];
 }
 
+
+//------------------------------------------------------------
+//------------ Scrollview Delegate -------
+//------------------------------------------------------------
+
+
 -(void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView{
 
     if(scrollView.contentOffset.y == 0.f){
@@ -313,7 +314,7 @@ static CGFloat const selectionViewBottomInset = 20;
 
     if (self.collectionsNeedReload){
         self.collectionsNeedReload = NO;
-        [self getNewContentInsetsAndAdjustOffset];
+//        [self getNewContentInsetsAndAdjustOffset:NO];
     }
 }
 
@@ -340,9 +341,9 @@ static CGFloat const selectionViewBottomInset = 20;
         
         CGPoint currentOffset = scrollView.contentOffset;
         CGFloat distance = currentOffset.y - _lastOffset.y;
-        
-        if(!self.lockSelectionViewPosition) [self.masterSelectionView adjustSelectedCellHeightWithOffset:distance andScrollView:scrollView];
-        
+
+        if (!self.collectionsNeedReload) [self.masterSelectionView adjustSelectedCellHeightWithOffset:distance andScrollView:scrollView];
+
         _lastOffset = currentOffset;
         
         /*
@@ -358,6 +359,12 @@ static CGFloat const selectionViewBottomInset = 20;
 
     }
 }
+
+//------------------------------------------------------------
+//-----------------------------------------------
+//------------------------------------------------------------
+
+
 
 -(void)setIsScrollingFast:(BOOL)isScrollingFast{
     /*

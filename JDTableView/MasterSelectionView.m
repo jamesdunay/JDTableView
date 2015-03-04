@@ -90,17 +90,7 @@ static CGFloat const yPos = 64.f;
         
         self.pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(dragFrame:)];
         self.pan.delegate = self;
-        
-//        self.swipeUp = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipedToClose)];
-//        self.swipeUp.delegate = self;
-//        self.swipeUp.direction = UISwipeGestureRecognizerDirectionUp;
-//        
-//        self.swipeDown = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipedToOpen)];
-//        self.swipeDown.delegate = self;
-//        self.swipeDown.direction = UISwipeGestureRecognizerDirectionDown;
-        
-//        [self.swipeDismissView addGestureRecognizer:self.swipeUp];
-//        [self.swipeDismissView addGestureRecognizer:self.swipeDown];
+    
         [self.swipeDismissView addGestureRecognizer:self.pan];
     }
     return self;
@@ -140,50 +130,53 @@ static CGFloat const yPos = 64.f;
 }
 
 -(void)swipedToClose{
-//    [self.selectionViewDelegate selectionsSwipedClosed];
-    [self.selectionView performBatchUpdates:^{
-        [UIView animateWithDuration:.8f
-                              delay:0.f
-             usingSpringWithDamping:.9f
-              initialSpringVelocity:14.f
-                            options:UIViewAnimationOptionCurveLinear | UIViewAnimationOptionAllowUserInteraction
-                         animations:^{
-                             [self.selectionViewDelegate moveMaskShouldOpen:NO isDragging:NO toPosition:[self getMinSizeFrame].size.height];
-                             
+
+    [UIView animateWithDuration:.8f
+                          delay:0.f
+         usingSpringWithDamping:.9f
+          initialSpringVelocity:14.f
+                        options:UIViewAnimationOptionCurveLinear | UIViewAnimationOptionAllowUserInteraction
+                     animations:^{
+
+                         [self.selectionView performBatchUpdates:^{
                              self.selectedCellHeight = titleDisplayThreshold/self.numberOfVisibleCells;
                              [self.selectionView reloadData];
-                             self.frame = [self getMinSizeFrame];
-                             [self layoutSubviews];
-
                          } completion:nil];
-    }completion:^(BOOL finished) {}];
+                         
+                         self.frame = [self getMinSizeFrame];
+                         [self layoutSubviews];
+                         [self.selectionViewDelegate moveMaskShouldOpen:NO isDragging:NO toPosition:[self getMinSizeFrame].size.height];
+                         [self.selectionViewDelegate animateCollectionToTopIfPossible];
+                     } completion:^(BOOL finished) {
+                         [self.selectionViewDelegate getNewContentInsetsAndAdjustOffset:NO];
+                     }];
 
     self.viewIsLockedUp = YES;
-    
 }
 
 -(void)swipedToOpen{
     self.viewHasBeenSwipedOpen = YES;
-    self.selectionView.layer.speed = 2.f;
-    [self.selectionView performBatchUpdates:^{
-        self.selectedCellHeight = maximumCellHeight;
-
     [UIView animateWithDuration:.7f
                           delay:0.f
          usingSpringWithDamping:.7f
           initialSpringVelocity:14.f
                         options:UIViewAnimationOptionCurveLinear | UIViewAnimationOptionAllowUserInteraction
                      animations:^{
-                         [self.selectionViewDelegate moveMaskShouldOpen:YES isDragging:NO toPosition:[self getMaxSizeFrame].size.height];
+                         
+                         [self.selectionView performBatchUpdates:^{
+                             self.selectedCellHeight = maximumCellHeight;
+                             [self.selectionView reloadData];
+                         } completion:nil];
+                         
                          self.frame = [self getMaxSizeFrame];
                          [self layoutSubviews];
-                         [self.selectionView reloadData];
-                     } completion:nil];
-    }completion:^(BOOL finished) {}];
+                         [self.selectionViewDelegate moveMaskShouldOpen:YES isDragging:NO toPosition:[self getMaxSizeFrame].size.height];
+                         [self.selectionViewDelegate animateCollectionToTopIfPossible];
+                     } completion:^(BOOL finished) {
+                         [self.selectionViewDelegate getNewContentInsetsAndAdjustOffset:NO];
+                     }];
 
-//    [self.selectionViewDelegate selectionsSwipedOpen:self.getMaxHeighForSelectionView];
     self.viewIsLockedUp = NO;
-    
 }
 
 -(void)layoutSubviews{
